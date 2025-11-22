@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.3.0-RC"
-    kotlin("plugin.allopen") version "2.3.0-RC"
+    kotlin("jvm") version "2.2.21"
+    kotlin("plugin.allopen") version "2.2.21"
     id("io.quarkus") version "3.29.4"
     // Code quality plugins
     id("io.gitlab.arturbosch.detekt") version "1.23.7"
@@ -72,7 +72,7 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -89,7 +89,7 @@ allOpen {
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }
 }
@@ -110,7 +110,7 @@ dependencies {
 }
 
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    jvmTarget = "25"
+    jvmTarget = "21"
     reports {
         html.required.set(true)
         xml.required.set(true)
