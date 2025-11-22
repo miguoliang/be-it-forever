@@ -165,8 +165,8 @@ A Quarkus reactive backend application for English knowledge learning with space
 - **Migration**: Flyway
 - **Workflow Engine**: Temporal (for heavy, multi-step workflows)
 - **Template Engine**: FreeMarker (for card content rendering)
-- **Language**: Kotlin 2.2.21
-- **Java**: Java 21
+- **Language**: Kotlin 2.3.0-RC
+- **Java**: Java 25
 - **Build**: Gradle with Kotlin DSL
 
 ---
