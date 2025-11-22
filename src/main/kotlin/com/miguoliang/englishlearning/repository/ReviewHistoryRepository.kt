@@ -9,4 +9,3 @@ import reactor.core.publisher.Flux
 interface ReviewHistoryRepository : ReactiveCrudRepository<ReviewHistory, Long> {
     fun findByAccountCardId(accountCardId: Long): Flux<ReviewHistory>
 }
-

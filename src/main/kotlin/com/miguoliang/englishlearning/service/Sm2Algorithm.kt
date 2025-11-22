@@ -14,12 +14,11 @@ import java.time.LocalDateTime
  * - Minimum ease factor: 1.3
  */
 object Sm2Algorithm {
-    
     private const val MIN_EASE_FACTOR = 1.3
     private const val DEFAULT_EASE_FACTOR = 2.5
     private const val DEFAULT_INTERVAL_DAYS = 1
     private const val DEFAULT_REPETITIONS = 0
-    
+
     /**
      * Calculates the next review state based on quality rating.
      * 
@@ -29,14 +28,14 @@ object Sm2Algorithm {
      */
     fun calculateNextReview(
         currentCard: AccountCard,
-        quality: Int
+        quality: Int,
     ): AccountCard {
         require(quality in 0..5) { "Quality must be between 0 and 5" }
-        
+
         val newEaseFactor = calculateNewEaseFactor(currentCard.easeFactor, quality)
         val newRepetitions: Int
         val newIntervalDays: Int
-        
+
         if (quality < 3) {
             // Failed: Reset repetitions to 0, interval to 1 day
             newRepetitions = 0
@@ -46,18 +45,18 @@ object Sm2Algorithm {
             newRepetitions = currentCard.repetitions + 1
             newIntervalDays = calculateNewInterval(newRepetitions, newEaseFactor, currentCard.intervalDays)
         }
-        
+
         val nextReviewDate = LocalDateTime.now().plusDays(newIntervalDays.toLong())
-        
+
         return currentCard.copy(
             easeFactor = newEaseFactor,
             repetitions = newRepetitions,
             intervalDays = newIntervalDays,
             nextReviewDate = nextReviewDate,
-            lastReviewedAt = LocalDateTime.now()
+            lastReviewedAt = LocalDateTime.now(),
         )
     }
-    
+
     /**
      * Creates initial card with default SM-2 values.
      * 
@@ -69,7 +68,7 @@ object Sm2Algorithm {
     fun createInitialCard(
         accountId: Long,
         knowledgeCode: String,
-        cardTypeCode: String
+        cardTypeCode: String,
     ): AccountCard {
         val now = LocalDateTime.now()
         return AccountCard(
@@ -85,29 +84,32 @@ object Sm2Algorithm {
             createdAt = java.time.Instant.now(),
             updatedAt = java.time.Instant.now(),
             createdBy = null,
-            updatedBy = null
+            updatedBy = null,
         )
     }
-    
+
     /**
      * Calculates new ease factor based on quality rating.
      * Formula: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
      * Minimum ease factor: 1.3
      */
-    private fun calculateNewEaseFactor(currentEaseFactor: BigDecimal, quality: Int): BigDecimal {
+    private fun calculateNewEaseFactor(
+        currentEaseFactor: BigDecimal,
+        quality: Int,
+    ): BigDecimal {
         val q = quality.toDouble()
         val ef = currentEaseFactor.toDouble()
-        
+
         // SM-2 ease factor formula
         val adjustment = 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)
         val newEf = ef + adjustment
-        
+
         // Ensure minimum ease factor
         val finalEf = maxOf(newEf, MIN_EASE_FACTOR)
-        
+
         return BigDecimal(finalEf).setScale(2, java.math.RoundingMode.HALF_UP)
     }
-    
+
     /**
      * Calculates new interval in days based on repetitions and ease factor.
      * SM-2 Algorithm interval calculation:
@@ -120,9 +122,9 @@ object Sm2Algorithm {
     private fun calculateNewInterval(
         repetitions: Int,
         easeFactor: BigDecimal,
-        currentIntervalDays: Int
-    ): Int {
-        return when (repetitions) {
+        currentIntervalDays: Int,
+    ): Int =
+        when (repetitions) {
             1 -> 1
             2 -> 6
             else -> {
@@ -131,6 +133,4 @@ object Sm2Algorithm {
                 maxOf(calculated.toInt(), 1)
             }
         }
-    }
 }
-

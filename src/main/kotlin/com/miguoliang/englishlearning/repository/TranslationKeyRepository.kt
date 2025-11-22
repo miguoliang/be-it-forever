@@ -9,4 +9,3 @@ import reactor.core.publisher.Mono
 interface TranslationKeyRepository : ReactiveCrudRepository<TranslationKey, String> {
     fun findByKey(key: String): Mono<TranslationKey>
 }
-

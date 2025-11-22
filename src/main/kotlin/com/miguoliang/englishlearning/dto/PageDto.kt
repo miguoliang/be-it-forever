@@ -9,7 +9,7 @@ import org.springframework.data.domain.Page
  */
 data class PageDto<T>(
     val content: List<T>,
-    val page: PageInfoDto
+    val page: PageInfoDto,
 )
 
 /**
@@ -21,21 +21,20 @@ data class PageInfoDto(
     @JsonProperty("totalElements")
     val totalElements: Long,
     @JsonProperty("totalPages")
-    val totalPages: Int
+    val totalPages: Int,
 )
 
 /**
  * Converts Spring Page to PageDto.
  */
-fun <T : Any> Page<T>.toDto(): PageDto<T> {
-    return PageDto(
+fun <T : Any> Page<T>.toDto(): PageDto<T> =
+    PageDto(
         content = this.content,
-        page = PageInfoDto(
-            number = this.number,
-            size = this.size,
-            totalElements = this.totalElements,
-            totalPages = this.totalPages
-        )
+        page =
+            PageInfoDto(
+                number = this.number,
+                size = this.size,
+                totalElements = this.totalElements,
+                totalPages = this.totalPages,
+            ),
     )
-}
-

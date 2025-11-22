@@ -14,7 +14,6 @@ import reactor.core.publisher.Mono
  */
 @Service
 class ReactivePaginationHelper {
-    
     /**
      * Paginates data from Flux and count from Mono into a Page.
      *
@@ -26,13 +25,12 @@ class ReactivePaginationHelper {
     fun <T : Any> paginate(
         data: Flux<T>,
         count: Mono<Long>,
-        pageable: Pageable
-    ): Mono<Page<T>> {
-        return Mono.zip(data.collectList(), count) { items, total ->
+        pageable: Pageable,
+    ): Mono<Page<T>> =
+        Mono.zip(data.collectList(), count) { items, total ->
             PageImpl(items, pageable, total)
         }
-    }
-    
+
     /**
      * Paginates data from separate data and count queries.
      * Convenience method that combines dataQuery and countQuery.
@@ -45,9 +43,6 @@ class ReactivePaginationHelper {
     fun <T : Any> paginateWithQuery(
         dataQuery: Flux<T>,
         countQuery: Mono<Long>,
-        pageable: Pageable
-    ): Mono<Page<T>> {
-        return paginate(dataQuery, countQuery, pageable)
-    }
+        pageable: Pageable,
+    ): Mono<Page<T>> = paginate(dataQuery, countQuery, pageable)
 }
-

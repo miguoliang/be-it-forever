@@ -5,6 +5,5 @@ package com.miguoliang.englishlearning.dto
  */
 data class WorkflowSignalDto(
     val signalName: String,
-    val signalData: Map<String, Any>? = null
+    val signalData: Map<String, Any>? = null,
 )
-

@@ -9,4 +9,3 @@ import reactor.core.publisher.Mono
 interface AccountRepository : ReactiveCrudRepository<Account, Long> {
     fun findByUsername(username: String): Mono<Account>
 }
-

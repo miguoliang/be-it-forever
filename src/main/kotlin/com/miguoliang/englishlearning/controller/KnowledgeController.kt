@@ -19,38 +19,37 @@ import reactor.core.publisher.Mono
 @RestController
 @RequestMapping("/api/v1/knowledge")
 class KnowledgeController(
-    private val knowledgeService: KnowledgeService
+    private val knowledgeService: KnowledgeService,
 ) {
-
     /**
      * List knowledge items with optional filtering.
      * GET /api/v1/knowledge
      */
     @GetMapping
-    fun listKnowledge(
-        pageable: Pageable
-    ): Mono<ResponseEntity<PageDto<KnowledgeDto>>> {
-        return knowledgeService.getKnowledge(pageable)
+    fun listKnowledge(pageable: Pageable): Mono<ResponseEntity<PageDto<KnowledgeDto>>> =
+        knowledgeService
+            .getKnowledge(pageable)
             .map { page ->
                 val content = page.content.map { it.toDto() }
-                val pageDto = PageDto(
-                    content = content,
-                    page = PageInfoDto(
-                        number = page.number,
-                        size = page.size,
-                        totalElements = page.totalElements,
-                        totalPages = page.totalPages
-                    )
-                ) as PageDto<KnowledgeDto>
+                val pageDto =
+                    PageDto(
+                        content = content,
+                        page =
+                            PageInfoDto(
+                                number = page.number,
+                                size = page.size,
+                                totalElements = page.totalElements,
+                                totalPages = page.totalPages,
+                            ),
+                    ) as PageDto<KnowledgeDto>
                 ResponseEntity.ok(pageDto)
-            }
-            .onErrorResume { error ->
+            }.onErrorResume { error ->
                 Mono.just(
-                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(PageDto<KnowledgeDto>(emptyList(), PageInfoDto(0, 0, 0, 0)))
+                    ResponseEntity
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(PageDto<KnowledgeDto>(emptyList(), PageInfoDto(0, 0, 0, 0))),
                 )
             }
-    }
 
     /**
      * Get a specific knowledge item.
@@ -58,24 +57,23 @@ class KnowledgeController(
      */
     @GetMapping("/{code}")
     fun getKnowledge(
-        @PathVariable code: String
-    ): Mono<ResponseEntity<Any>> {
-        return knowledgeService.getKnowledgeByCode(code)
+        @PathVariable code: String,
+    ): Mono<ResponseEntity<Any>> =
+        knowledgeService
+            .getKnowledgeByCode(code)
             .map { knowledge ->
                 ResponseEntity.ok<Any>(knowledge.toDto())
-            }
-            .switchIfEmpty(
+            }.switchIfEmpty(
                 Mono.just(
-                    ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body<Any>(ErrorResponseFactory.notFound("Knowledge", code))
-                )
-            )
-            .onErrorResume { error ->
+                    ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body<Any>(ErrorResponseFactory.notFound("Knowledge", code)),
+                ),
+            ).onErrorResume { error ->
                 Mono.just(
-                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body<Any>(ErrorResponseFactory.internalError(error.message ?: "Internal server error"))
+                    ResponseEntity
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body<Any>(ErrorResponseFactory.internalError(error.message ?: "Internal server error")),
                 )
             }
-    }
 }
-

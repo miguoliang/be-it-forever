@@ -11,27 +11,21 @@ import reactor.core.publisher.Mono
  */
 @Service
 class TemplateService(
-    private val templateRepository: TemplateRepository
+    private val templateRepository: TemplateRepository,
 ) {
-    
     /**
      * Get single template by code.
      * 
      * @param code Template code identifier
      * @return Mono containing Template or empty if not found
      */
-    fun getTemplateByCode(code: String): Mono<Template> {
-        return templateRepository.findByCode(code)
-    }
-    
+    fun getTemplateByCode(code: String): Mono<Template> = templateRepository.findByCode(code)
+
     /**
      * List all templates.
      * Usage determined by relationships (card_type_template_rel).
      * 
      * @return Flux of all templates
      */
-    fun getAllTemplates(): Flux<Template> {
-        return templateRepository.findAll()
-    }
+    fun getAllTemplates(): Flux<Template> = templateRepository.findAll()
 }
-

@@ -15,6 +15,5 @@ data class StatsDto(
     @JsonProperty("dueToday")
     val dueToday: Long,
     @JsonProperty("byCardType")
-    val byCardType: Map<String, Long>
+    val byCardType: Map<String, Long>,
 )
-

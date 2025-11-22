@@ -1,6 +1,5 @@
 package com.miguoliang.englishlearning.controller
 
-import com.miguoliang.englishlearning.dto.ErrorResponseFactory
 import com.miguoliang.englishlearning.dto.StatsDto
 import com.miguoliang.englishlearning.service.StatsService
 import org.springframework.http.HttpStatus
@@ -18,9 +17,8 @@ import reactor.core.publisher.Mono
 @RestController
 @RequestMapping("/api/v1/accounts")
 class StatsController(
-    private val statsService: StatsService
+    private val statsService: StatsService,
 ) {
-
     /**
      * Get learning statistics for current account.
      * GET /api/v1/accounts/me/stats
@@ -30,24 +28,25 @@ class StatsController(
     fun getStats(): Mono<ResponseEntity<StatsDto>> {
         // TODO: Extract accountId from JWT token
         val accountId = 1L // Placeholder
-        
-        return statsService.getStats(accountId)
+
+        return statsService
+            .getStats(accountId)
             .map { statsMap ->
-                val statsDto = StatsDto(
-                    totalCards = (statsMap["totalCards"] as? Number)?.toLong() ?: 0L,
-                    newCards = (statsMap["newCards"] as? Number)?.toLong() ?: 0L,
-                    learningCards = (statsMap["learningCards"] as? Number)?.toLong() ?: 0L,
-                    dueToday = (statsMap["dueToday"] as? Number)?.toLong() ?: 0L,
-                    byCardType = (statsMap["byCardType"] as? Map<String, Long>) ?: emptyMap()
-                )
+                val statsDto =
+                    StatsDto(
+                        totalCards = (statsMap["totalCards"] as? Number)?.toLong() ?: 0L,
+                        newCards = (statsMap["newCards"] as? Number)?.toLong() ?: 0L,
+                        learningCards = (statsMap["learningCards"] as? Number)?.toLong() ?: 0L,
+                        dueToday = (statsMap["dueToday"] as? Number)?.toLong() ?: 0L,
+                        byCardType = (statsMap["byCardType"] as? Map<String, Long>) ?: emptyMap(),
+                    )
                 ResponseEntity.ok(statsDto)
-            }
-            .onErrorResume { error ->
+            }.onErrorResume { error ->
                 Mono.just(
-                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(StatsDto(0L, 0L, 0L, 0L, emptyMap()))
+                    ResponseEntity
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(StatsDto(0L, 0L, 0L, 0L, emptyMap())),
                 )
             }
     }
 }
-

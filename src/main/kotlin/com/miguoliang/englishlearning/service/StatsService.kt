@@ -10,9 +10,8 @@ import java.time.LocalDateTime
  */
 @Service
 class StatsService(
-    private val accountCardRepository: AccountCardRepository
+    private val accountCardRepository: AccountCardRepository,
 ) {
-    
     /**
      * Get comprehensive learning statistics for an account.
      *
@@ -23,7 +22,8 @@ class StatsService(
         val now = LocalDateTime.now()
 
         // Fetch all cards once and compute statistics in memory to avoid N+1
-        return accountCardRepository.findByAccountId(accountId)
+        return accountCardRepository
+            .findByAccountId(accountId)
             .collectList()
             .map { allCards ->
                 if (allCards.isEmpty()) {
@@ -32,7 +32,7 @@ class StatsService(
                         "newCards" to 0L,
                         "learningCards" to 0L,
                         "dueToday" to 0L,
-                        "byCardType" to emptyMap<String, Long>()
+                        "byCardType" to emptyMap<String, Long>(),
                     )
                 }
 
@@ -40,19 +40,19 @@ class StatsService(
                 val newCards = allCards.count { it.repetitions == 0 }.toLong()
                 val learningCards = allCards.count { it.repetitions > 0 && it.repetitions < 3 }.toLong()
                 val dueToday = allCards.count { it.nextReviewDate <= now }.toLong()
-                val byCardType = allCards
-                    .groupingBy { it.cardTypeCode }
-                    .eachCount()
-                    .mapValues { it.value.toLong() }
+                val byCardType =
+                    allCards
+                        .groupingBy { it.cardTypeCode }
+                        .eachCount()
+                        .mapValues { it.value.toLong() }
 
                 mapOf(
                     "totalCards" to totalCards,
                     "newCards" to newCards,
                     "learningCards" to learningCards,
                     "dueToday" to dueToday,
-                    "byCardType" to byCardType
+                    "byCardType" to byCardType,
                 )
             }
     }
 }
-

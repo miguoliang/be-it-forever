@@ -15,6 +15,5 @@ data class WorkflowExecutionDto(
     val runId: String,
     val status: String,
     @JsonProperty("startedAt")
-    val startedAt: Instant
+    val startedAt: Instant,
 )
-

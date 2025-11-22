@@ -11,19 +11,16 @@ import reactor.core.publisher.Mono
  */
 @Service
 class CardTypeService(
-    private val cardTypeRepository: CardTypeRepository
+    private val cardTypeRepository: CardTypeRepository,
 ) {
-    
     /**
      * List all card types.
      * Note: Template references are not loaded here. Use CardTemplateService to render templates for specific roles.
      * 
      * @return Flux of all card types
      */
-    fun getAllCardTypes(): Flux<CardType> {
-        return cardTypeRepository.findAll()
-    }
-    
+    fun getAllCardTypes(): Flux<CardType> = cardTypeRepository.findAll()
+
     /**
      * Get single card type by code.
      * Note: Template references are not loaded here. Use CardTemplateService to render templates for specific roles.
@@ -31,9 +28,7 @@ class CardTypeService(
      * @param code Card type code identifier
      * @return Mono containing CardType or empty if not found
      */
-    fun getCardTypeByCode(code: String): Mono<CardType> {
-        return cardTypeRepository.findByCode(code)
-    }
+    fun getCardTypeByCode(code: String): Mono<CardType> = cardTypeRepository.findByCode(code)
 
     /**
      * Batch load card types by codes.
@@ -45,8 +40,8 @@ class CardTypeService(
         if (codes.isEmpty()) {
             return Mono.just(emptyMap())
         }
-        return cardTypeRepository.findByCodeIn(codes)
+        return cardTypeRepository
+            .findByCodeIn(codes)
             .collectMap { it.code }
     }
 }
-

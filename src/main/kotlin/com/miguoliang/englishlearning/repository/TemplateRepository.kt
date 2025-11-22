@@ -8,6 +8,6 @@ import reactor.core.publisher.Mono
 @Repository
 interface TemplateRepository : ReactiveCrudRepository<Template, String> {
     fun findByCode(code: String): Mono<Template>
+
     fun findByName(name: String): Mono<Template>
 }
-

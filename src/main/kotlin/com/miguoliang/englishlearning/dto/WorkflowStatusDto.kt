@@ -17,6 +17,5 @@ data class WorkflowStatusDto(
     @JsonProperty("completedAt")
     val completedAt: Instant?,
     val result: Map<String, Any>? = null,
-    val error: String? = null
+    val error: String? = null,
 )
-

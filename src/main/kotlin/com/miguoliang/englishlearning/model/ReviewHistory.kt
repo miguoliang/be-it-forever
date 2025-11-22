@@ -10,17 +10,12 @@ data class ReviewHistory(
     @Id
     @Column("id")
     val id: Long? = null,
-    
     @Column("account_card_id")
     val accountCardId: Long,
-    
     @Column("quality")
     val quality: Int,
-    
     @Column("reviewed_at")
     val reviewedAt: LocalDateTime, // Changed to LocalDateTime to match local_time semantic type
-    
     @Column("created_by")
-    val createdBy: String?
+    val createdBy: String?,
 )
-

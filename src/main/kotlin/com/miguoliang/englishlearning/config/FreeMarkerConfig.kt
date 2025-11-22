@@ -11,21 +11,20 @@ import org.springframework.context.annotation.Configuration as SpringConfigurati
  */
 @SpringConfiguration
 class FreeMarkerConfig {
-    
     @Bean
     fun freeMarkerConfiguration(): Configuration {
         val cfg = Configuration(Configuration.VERSION_2_3_32)
-        
+
         // Use StringTemplateLoader since templates are stored in database
         cfg.setTemplateLoader(StringTemplateLoader())
-        
+
         // Recommended settings
         cfg.defaultEncoding = "UTF-8"
         cfg.templateExceptionHandler = TemplateExceptionHandler.RETHROW_HANDLER
         cfg.logTemplateExceptions = false
         cfg.wrapUncheckedExceptions = true
         cfg.fallbackOnNullLoopVariable = false
-        
+
         return cfg
     }
 }
@@ -37,32 +36,38 @@ class FreeMarkerConfig {
  */
 class StringTemplateLoader : freemarker.cache.TemplateLoader {
     private val templates = java.util.concurrent.ConcurrentHashMap<String, String>()
-    
-    fun putTemplate(name: String, content: String) {
+
+    fun putTemplate(
+        name: String,
+        content: String,
+    ) {
         templates[name] = content
     }
-    
+
     fun clearTemplate(name: String) {
         templates.remove(name)
     }
-    
-    override fun findTemplateSource(name: String): Any? {
-        return templates[name]?.let { StringTemplateSource(name, it) }
-    }
-    
+
+    override fun findTemplateSource(name: String): Any? = templates[name]?.let { StringTemplateSource(name, it) }
+
     override fun getLastModified(templateSource: Any): Long {
         return System.currentTimeMillis() // Templates from DB are considered always current
     }
-    
-    override fun getReader(templateSource: Any, encoding: String): java.io.Reader {
+
+    override fun getReader(
+        templateSource: Any,
+        encoding: String,
+    ): java.io.Reader {
         val source = templateSource as StringTemplateSource
         return java.io.StringReader(source.content)
     }
-    
+
     override fun closeTemplateSource(templateSource: Any) {
         // No resources to close for String-based templates
     }
-    
-    private data class StringTemplateSource(val name: String, val content: String)
-}
 
+    private data class StringTemplateSource(
+        val name: String,
+        val content: String,
+    )
+}

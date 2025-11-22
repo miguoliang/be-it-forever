@@ -21,7 +21,7 @@ data class AccountCardDto(
     @JsonProperty("nextReviewDate")
     val nextReviewDate: LocalDateTime,
     @JsonProperty("lastReviewedAt")
-    val lastReviewedAt: LocalDateTime?
+    val lastReviewedAt: LocalDateTime?,
 )
 
 /**
@@ -32,9 +32,9 @@ fun com.miguoliang.englishlearning.model.AccountCard.toDto(
     knowledge: KnowledgeDto,
     cardType: CardTypeDto,
     front: String? = null,
-    back: String? = null
-): AccountCardDto {
-    return AccountCardDto(
+    back: String? = null,
+): AccountCardDto =
+    AccountCardDto(
         id = this.id!!,
         knowledge = knowledge,
         cardType = cardType,
@@ -44,7 +44,5 @@ fun com.miguoliang.englishlearning.model.AccountCard.toDto(
         intervalDays = this.intervalDays,
         repetitions = this.repetitions,
         nextReviewDate = this.nextReviewDate,
-        lastReviewedAt = this.lastReviewedAt
+        lastReviewedAt = this.lastReviewedAt,
     )
-}
-

@@ -9,10 +9,11 @@ import reactor.core.publisher.Mono
 @Repository
 interface TranslationMessageRepository : ReactiveCrudRepository<TranslationMessage, String> {
     fun findByTranslationKeyCode(translationKeyCode: String): Flux<TranslationMessage>
+
     fun findByTranslationKeyCodeAndLocaleCode(
         translationKeyCode: String,
-        localeCode: String
+        localeCode: String,
     ): Mono<TranslationMessage>
+
     fun findByLocaleCode(localeCode: String): Flux<TranslationMessage>
 }
-

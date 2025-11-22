@@ -10,6 +10,5 @@ data class WorkflowCancelResponseDto(
     @JsonProperty("workflowId")
     val workflowId: String,
     val canceled: Boolean,
-    val timestamp: Instant
+    val timestamp: Instant,
 )
-

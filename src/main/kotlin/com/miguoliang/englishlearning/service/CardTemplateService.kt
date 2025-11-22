@@ -28,9 +28,8 @@ class CardTemplateService(
     private val cardTypeTemplateRelRepository: CardTypeTemplateRelRepository,
     private val knowledgeRelRepository: KnowledgeRelRepository,
     private val knowledgeRepository: KnowledgeRepository,
-    private val freeMarkerConfig: Configuration
+    private val freeMarkerConfig: Configuration,
 ) {
-    
     /**
      * Generates content using FreeMarker template for specified role.
      * 
@@ -42,21 +41,23 @@ class CardTemplateService(
     fun renderByRole(
         cardType: CardType,
         knowledge: Knowledge,
-        role: String
+        role: String,
     ): Mono<String> {
         // Find template for this card type and role
-        return cardTypeTemplateRelRepository.findByCardTypeCodeAndRole(cardType.code, role)
+        return cardTypeTemplateRelRepository
+            .findByCardTypeCodeAndRole(cardType.code, role)
             .flatMap { rel ->
                 templateService.getTemplateByCode(rel.templateCode)
-            }
-            .flatMap { template ->
+            }.flatMap { template ->
                 // Validate template format
                 if (template.format != "ftl") {
                     return@flatMap Mono.error<String>(
-                        IllegalArgumentException("Unsupported template format: ${template.format}. Expected 'ftl' for FreeMarker.")
+                        IllegalArgumentException(
+                            "Unsupported template format: ${template.format}. Expected 'ftl' for FreeMarker.",
+                        ),
                     )
                 }
-                
+
                 // Load related knowledge items
                 loadRelatedKnowledge(knowledge.code)
                     .collectList()
@@ -64,16 +65,16 @@ class CardTemplateService(
                         // Render template using FreeMarker
                         renderTemplate(template, knowledge, relatedKnowledge)
                     }
-            }
-            .switchIfEmpty(Mono.just(""))
+            }.switchIfEmpty(Mono.just(""))
     }
-    
+
     /**
      * Loads related knowledge items via knowledge_rel junction table.
      * Uses batch loading to avoid N+1 queries.
      */
-    private fun loadRelatedKnowledge(knowledgeCode: String): Flux<Knowledge> {
-        return knowledgeRelRepository.findBySourceKnowledgeCode(knowledgeCode)
+    private fun loadRelatedKnowledge(knowledgeCode: String): Flux<Knowledge> =
+        knowledgeRelRepository
+            .findBySourceKnowledgeCode(knowledgeCode)
             .map { it.targetKnowledgeCode }
             .collectList()
             .flatMapMany { targetCodes ->
@@ -84,8 +85,7 @@ class CardTemplateService(
                     knowledgeRepository.findByCodeIn(targetCodes)
                 }
             }
-    }
-    
+
     /**
      * Renders FreeMarker template with knowledge data.
      * 
@@ -97,61 +97,65 @@ class CardTemplateService(
     private fun renderTemplate(
         template: Template,
         knowledge: Knowledge,
-        relatedKnowledge: List<Knowledge>
-    ): Mono<String> {
-        return Mono.fromCallable<String> {
-            try {
-                val templateContent = String(template.content, StandardCharsets.UTF_8)
-                
-                // Register template with FreeMarker StringTemplateLoader
-                // Use unique name per request to avoid conflicts in concurrent scenarios
-                val templateLoader = freeMarkerConfig.templateLoader as com.miguoliang.englishlearning.config.StringTemplateLoader
-                val templateName = "template_${template.code}_${UUID.randomUUID()}"
-                
+        relatedKnowledge: List<Knowledge>,
+    ): Mono<String> =
+        Mono
+            .fromCallable<String> {
                 try {
-                    templateLoader.putTemplate(templateName, templateContent)
-                    
-                    // Get FreeMarker template
-                    val fmTemplate = freeMarkerConfig.getTemplate(templateName)
-                    
-                    // Prepare data model for FreeMarker
-                    val dataModel = prepareDataModel(knowledge, relatedKnowledge)
-                    
-                    // Render template
-                    val writer = StringWriter()
-                    fmTemplate.process(dataModel, writer)
-                    
-                    writer.toString()
-                } finally {
-                    // Always clean up template from loader
-                    templateLoader.clearTemplate(templateName)
+                    val templateContent = String(template.content, StandardCharsets.UTF_8)
+
+                    // Register template with FreeMarker StringTemplateLoader
+                    // Use unique name per request to avoid conflicts in concurrent scenarios
+                    val templateLoader =
+                        freeMarkerConfig.templateLoader as
+                            com.miguoliang.englishlearning.config.StringTemplateLoader
+                    val templateName = "template_${template.code}_${UUID.randomUUID()}"
+
+                    try {
+                        templateLoader.putTemplate(templateName, templateContent)
+
+                        // Get FreeMarker template
+                        val fmTemplate = freeMarkerConfig.getTemplate(templateName)
+
+                        // Prepare data model for FreeMarker
+                        val dataModel = prepareDataModel(knowledge, relatedKnowledge)
+
+                        // Render template
+                        val writer = StringWriter()
+                        fmTemplate.process(dataModel, writer)
+
+                        writer.toString()
+                    } finally {
+                        // Always clean up template from loader
+                        templateLoader.clearTemplate(templateName)
+                    }
+                } catch (e: freemarker.template.TemplateException) {
+                    throw RuntimeException("FreeMarker template error in template ${template.code}: ${e.message}", e)
+                } catch (e: java.io.IOException) {
+                    throw RuntimeException("IO error rendering template ${template.code}: ${e.message}", e)
+                } catch (e: Exception) {
+                    throw RuntimeException("Failed to render FreeMarker template: ${template.code}", e)
                 }
-            } catch (e: freemarker.template.TemplateException) {
-                throw RuntimeException("FreeMarker template error in template ${template.code}: ${e.message}", e)
-            } catch (e: java.io.IOException) {
-                throw RuntimeException("IO error rendering template ${template.code}: ${e.message}", e)
-            } catch (e: Exception) {
-                throw RuntimeException("Failed to render FreeMarker template: ${template.code}", e)
-            }
-        }
-        .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
-    }
-    
+            }.subscribeOn(
+                reactor.core.scheduler.Schedulers
+                    .boundedElastic(),
+            )
+
     /**
      * Prepares data model for FreeMarker template.
      * Converts Knowledge entities and metadata to FreeMarker-compatible data structures.
      */
     private fun prepareDataModel(
         knowledge: Knowledge,
-        relatedKnowledge: List<Knowledge>
+        relatedKnowledge: List<Knowledge>,
     ): Map<String, Any> {
         val dataModel = mutableMapOf<String, Any>()
-        
+
         // Add main knowledge fields
         dataModel["name"] = knowledge.name
         dataModel["description"] = knowledge.description ?: ""
         dataModel["code"] = knowledge.code
-        
+
         // Add metadata as nested map for dot notation access
         if (knowledge.metadata != null) {
             val metadataMap = convertMetadataToMap(knowledge.metadata)
@@ -159,21 +163,22 @@ class CardTemplateService(
         } else {
             dataModel["metadata"] = emptyMap<String, Any>()
         }
-        
+
         // Add related knowledge list for iteration
-        val relatedKnowledgeList = relatedKnowledge.map { related ->
-            mapOf(
-                "code" to related.code,
-                "name" to related.name,
-                "description" to (related.description ?: ""),
-                "metadata" to (related.metadata?.let { convertMetadataToMap(it) } ?: emptyMap<String, Any>())
-            )
-        }
+        val relatedKnowledgeList =
+            relatedKnowledge.map { related ->
+                mapOf(
+                    "code" to related.code,
+                    "name" to related.name,
+                    "description" to (related.description ?: ""),
+                    "metadata" to (related.metadata?.let { convertMetadataToMap(it) } ?: emptyMap<String, Any>()),
+                )
+            }
         dataModel["relatedKnowledge"] = relatedKnowledgeList
-        
+
         return dataModel
     }
-    
+
     /**
      * Converts Metadata object to Map for FreeMarker dot notation access.
      */

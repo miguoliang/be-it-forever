@@ -8,6 +8,5 @@ import com.fasterxml.jackson.annotation.JsonProperty
  */
 data class Metadata(
     @JsonProperty("level")
-    val level: String? = null
+    val level: String? = null,
 )
-

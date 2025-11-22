@@ -9,7 +9,11 @@ import reactor.core.publisher.Mono
 @Repository
 interface CardTypeTemplateRelRepository : ReactiveCrudRepository<CardTypeTemplateRel, Long> {
     fun findByCardTypeCode(cardTypeCode: String): Flux<CardTypeTemplateRel>
-    fun findByTemplateCode(templateCode: String): Flux<CardTypeTemplateRel>
-    fun findByCardTypeCodeAndRole(cardTypeCode: String, role: String): Mono<CardTypeTemplateRel>
-}
 
+    fun findByTemplateCode(templateCode: String): Flux<CardTypeTemplateRel>
+
+    fun findByCardTypeCodeAndRole(
+        cardTypeCode: String,
+        role: String,
+    ): Mono<CardTypeTemplateRel>
+}

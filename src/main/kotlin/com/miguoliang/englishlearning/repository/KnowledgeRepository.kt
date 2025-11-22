@@ -10,7 +10,6 @@ import reactor.core.publisher.Mono
 
 @Repository
 interface KnowledgeRepository : ReactiveCrudRepository<Knowledge, String> {
-
     @Query("SELECT * FROM knowledge ORDER BY code OFFSET :#{#pageable.offset} LIMIT :#{#pageable.pageSize}")
     fun findAllOrderedByCode(pageable: Pageable): Flux<Knowledge>
 
@@ -19,4 +18,3 @@ interface KnowledgeRepository : ReactiveCrudRepository<Knowledge, String> {
     @Query("SELECT * FROM knowledge WHERE code IN (:codes)")
     fun findByCodeIn(codes: Collection<String>): Flux<Knowledge>
 }
-

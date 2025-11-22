@@ -17,9 +17,8 @@ import java.time.LocalDateTime
 class AccountCardService(
     private val accountCardRepository: AccountCardRepository,
     private val reviewHistoryRepository: ReviewHistoryRepository,
-    private val paginationHelper: ReactivePaginationHelper
+    private val paginationHelper: ReactivePaginationHelper,
 ) {
-    
     /**
      * Initialize cards for account.
      * Note: This is typically called automatically during signup via Temporal workflow.
@@ -31,13 +30,13 @@ class AccountCardService(
      */
     fun initializeCards(
         accountId: Long,
-        cardTypeCodes: List<String>?
+        cardTypeCodes: List<String>?,
     ): Mono<Int> {
         // TODO: This should trigger Temporal workflow for card initialization
         // For now, this is a placeholder
         return Mono.just(0)
     }
-    
+
     /**
      * Get cards due for review.
      * 
@@ -49,24 +48,34 @@ class AccountCardService(
     fun getDueCards(
         accountId: Long,
         pageable: Pageable,
-        cardTypeCode: String? = null
+        cardTypeCode: String? = null,
     ): Mono<Page<AccountCard>> {
         val now = LocalDateTime.now()
-        val (dataQuery, countQuery) = if (cardTypeCode != null) {
-            Pair(
-                accountCardRepository.findDueCardsByAccountIdAndCardTypeCode(accountId, now, cardTypeCode, pageable),
-                accountCardRepository.countDueCardsByAccountIdAndCardTypeCode(accountId, now, cardTypeCode)
-            )
-        } else {
-            Pair(
-                accountCardRepository.findDueCardsByAccountId(accountId, now, pageable),
-                accountCardRepository.countDueCardsByAccountId(accountId, now)
-            )
-        }
-        
+        val (dataQuery, countQuery) =
+            if (cardTypeCode != null) {
+                Pair(
+                    accountCardRepository.findDueCardsByAccountIdAndCardTypeCode(
+                        accountId,
+                        now,
+                        cardTypeCode,
+                        pageable,
+                    ),
+                    accountCardRepository.countDueCardsByAccountIdAndCardTypeCode(
+                        accountId,
+                        now,
+                        cardTypeCode,
+                    ),
+                )
+            } else {
+                Pair(
+                    accountCardRepository.findDueCardsByAccountId(accountId, now, pageable),
+                    accountCardRepository.countDueCardsByAccountId(accountId, now),
+                )
+            }
+
         return paginationHelper.paginate(dataQuery, countQuery, pageable)
     }
-    
+
     /**
      * Process review and update SM-2 state.
      * 
@@ -78,33 +87,38 @@ class AccountCardService(
     fun reviewCard(
         accountId: Long,
         cardId: Long,
-        quality: Int
-    ): Mono<AccountCard> {
-        return accountCardRepository.findById(cardId)
+        quality: Int,
+    ): Mono<AccountCard> =
+        accountCardRepository
+            .findById(cardId)
             .filter { it.accountId == accountId }
             .switchIfEmpty(Mono.error(IllegalArgumentException("Card not found or does not belong to account")))
             .flatMap { card ->
                 // Apply SM-2 algorithm
-                val updatedCard = Sm2Algorithm.calculateNextReview(card, quality)
-                    .copy(updatedAt = java.time.Instant.now())
-                
+                val updatedCard =
+                    Sm2Algorithm
+                        .calculateNextReview(card, quality)
+                        .copy(updatedAt = java.time.Instant.now())
+
                 // Save updated card
-                accountCardRepository.save(updatedCard)
+                accountCardRepository
+                    .save(updatedCard)
                     .flatMap { savedCard ->
                         // Create review history entry
-                        val reviewHistory = ReviewHistory(
-                            id = null,
-                            accountCardId = savedCard.id!!,
-                            quality = quality,
-                            reviewedAt = LocalDateTime.now(),
-                            createdBy = null
-                        )
-                        reviewHistoryRepository.save(reviewHistory)
+                        val reviewHistory =
+                            ReviewHistory(
+                                id = null,
+                                accountCardId = savedCard.id!!,
+                                quality = quality,
+                                reviewedAt = LocalDateTime.now(),
+                                createdBy = null,
+                            )
+                        reviewHistoryRepository
+                            .save(reviewHistory)
                             .thenReturn(savedCard)
                     }
             }
-    }
-    
+
     /**
      * List account cards with filters.
      * 
@@ -122,65 +136,86 @@ class AccountCardService(
         accountId: Long,
         pageable: Pageable,
         cardTypeCode: String? = null,
-        status: String? = null
+        status: String? = null,
     ): Mono<Page<AccountCard>> {
         val now = LocalDateTime.now()
         val effectiveStatus = if (status == null || status == "all") null else status
-        
-        val (dataQuery, countQuery) = when {
-            cardTypeCode != null && effectiveStatus == "new" -> {
-                Pair(
-                    accountCardRepository.findByAccountIdAndCardTypeCodeAndStatusNew(accountId, cardTypeCode, pageable),
-                    accountCardRepository.countByAccountIdAndCardTypeCodeAndStatusNew(accountId, cardTypeCode)
-                )
+
+        val (dataQuery, countQuery) =
+            when {
+                cardTypeCode != null && effectiveStatus == "new" -> {
+                    Pair(
+                        accountCardRepository.findByAccountIdAndCardTypeCodeAndStatusNew(
+                            accountId,
+                            cardTypeCode,
+                            pageable,
+                        ),
+                        accountCardRepository.countByAccountIdAndCardTypeCodeAndStatusNew(accountId, cardTypeCode),
+                    )
+                }
+                cardTypeCode != null && effectiveStatus == "learning" -> {
+                    Pair(
+                        accountCardRepository.findByAccountIdAndCardTypeCodeAndStatusLearning(
+                            accountId,
+                            cardTypeCode,
+                            pageable,
+                        ),
+                        accountCardRepository.countByAccountIdAndCardTypeCodeAndStatusLearning(
+                            accountId,
+                            cardTypeCode,
+                        ),
+                    )
+                }
+                cardTypeCode != null && effectiveStatus == "review" -> {
+                    Pair(
+                        accountCardRepository.findByAccountIdAndCardTypeCodeAndStatusReview(
+                            accountId,
+                            cardTypeCode,
+                            now,
+                            pageable,
+                        ),
+                        accountCardRepository.countByAccountIdAndCardTypeCodeAndStatusReview(
+                            accountId,
+                            cardTypeCode,
+                            now,
+                        ),
+                    )
+                }
+                cardTypeCode != null -> {
+                    Pair(
+                        accountCardRepository.findByAccountIdAndCardTypeCode(accountId, cardTypeCode, pageable),
+                        accountCardRepository.countByAccountIdAndCardTypeCode(accountId, cardTypeCode),
+                    )
+                }
+                effectiveStatus == "new" -> {
+                    Pair(
+                        accountCardRepository.findByAccountIdAndStatusNew(accountId, pageable),
+                        accountCardRepository.countByAccountIdAndStatusNew(accountId),
+                    )
+                }
+                effectiveStatus == "learning" -> {
+                    Pair(
+                        accountCardRepository.findByAccountIdAndStatusLearning(accountId, pageable),
+                        accountCardRepository.countByAccountIdAndStatusLearning(accountId),
+                    )
+                }
+                effectiveStatus == "review" -> {
+                    Pair(
+                        accountCardRepository.findByAccountIdAndStatusReview(accountId, now, pageable),
+                        accountCardRepository.countByAccountIdAndStatusReview(accountId, now),
+                    )
+                }
+                else -> {
+                    Pair(
+                        accountCardRepository.findByAccountId(accountId, pageable),
+                        accountCardRepository.countByAccountId(accountId),
+                    )
+                }
             }
-            cardTypeCode != null && effectiveStatus == "learning" -> {
-                Pair(
-                    accountCardRepository.findByAccountIdAndCardTypeCodeAndStatusLearning(accountId, cardTypeCode, pageable),
-                    accountCardRepository.countByAccountIdAndCardTypeCodeAndStatusLearning(accountId, cardTypeCode)
-                )
-            }
-            cardTypeCode != null && effectiveStatus == "review" -> {
-                Pair(
-                    accountCardRepository.findByAccountIdAndCardTypeCodeAndStatusReview(accountId, cardTypeCode, now, pageable),
-                    accountCardRepository.countByAccountIdAndCardTypeCodeAndStatusReview(accountId, cardTypeCode, now)
-                )
-            }
-            cardTypeCode != null -> {
-                Pair(
-                    accountCardRepository.findByAccountIdAndCardTypeCode(accountId, cardTypeCode, pageable),
-                    accountCardRepository.countByAccountIdAndCardTypeCode(accountId, cardTypeCode)
-                )
-            }
-            effectiveStatus == "new" -> {
-                Pair(
-                    accountCardRepository.findByAccountIdAndStatusNew(accountId, pageable),
-                    accountCardRepository.countByAccountIdAndStatusNew(accountId)
-                )
-            }
-            effectiveStatus == "learning" -> {
-                Pair(
-                    accountCardRepository.findByAccountIdAndStatusLearning(accountId, pageable),
-                    accountCardRepository.countByAccountIdAndStatusLearning(accountId)
-                )
-            }
-            effectiveStatus == "review" -> {
-                Pair(
-                    accountCardRepository.findByAccountIdAndStatusReview(accountId, now, pageable),
-                    accountCardRepository.countByAccountIdAndStatusReview(accountId, now)
-                )
-            }
-            else -> {
-                Pair(
-                    accountCardRepository.findByAccountId(accountId, pageable),
-                    accountCardRepository.countByAccountId(accountId)
-                )
-            }
-        }
-        
+
         return paginationHelper.paginate(dataQuery, countQuery, pageable)
     }
-    
+
     /**
      * Get single card by ID.
      * 
@@ -188,9 +223,11 @@ class AccountCardService(
      * @param cardId Card ID
      * @return Mono containing AccountCard or empty if not found
      */
-    fun getCardById(accountId: Long, cardId: Long): Mono<AccountCard> {
-        return accountCardRepository.findById(cardId)
+    fun getCardById(
+        accountId: Long,
+        cardId: Long,
+    ): Mono<AccountCard> =
+        accountCardRepository
+            .findById(cardId)
             .filter { it.accountId == accountId }
-    }
 }
-

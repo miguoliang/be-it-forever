@@ -16,10 +16,10 @@ import org.springframework.stereotype.Component
 @ReadingConverter
 @Component
 class JsonbToMetadataConverter(
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) : Converter<String, Metadata> {
-    override fun convert(source: String): Metadata {
-        return try {
+    override fun convert(source: String): Metadata =
+        try {
             if (source.isBlank() || source == "null" || source == "{}") {
                 Metadata()
             } else {
@@ -29,16 +29,15 @@ class JsonbToMetadataConverter(
             // If parsing fails, return empty metadata
             Metadata()
         }
-    }
 }
 
 @WritingConverter
 @Component
 class MetadataToJsonbConverter(
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) : Converter<Metadata, String> {
-    override fun convert(source: Metadata): String {
-        return try {
+    override fun convert(source: Metadata): String =
+        try {
             if (source.level == null) {
                 "{}"
             } else {
@@ -48,5 +47,4 @@ class MetadataToJsonbConverter(
             // If serialization fails, return empty JSON
             "{}"
         }
-    }
 }

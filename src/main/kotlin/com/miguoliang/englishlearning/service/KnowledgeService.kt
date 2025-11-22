@@ -13,9 +13,8 @@ import reactor.core.publisher.Mono
 @Service
 class KnowledgeService(
     private val knowledgeRepository: KnowledgeRepository,
-    private val paginationHelper: ReactivePaginationHelper
+    private val paginationHelper: ReactivePaginationHelper,
 ) {
-    
     /**
      * List knowledge items with pagination.
      * 
@@ -23,24 +22,25 @@ class KnowledgeService(
      * @param filter Optional filter expression (not implemented in MVP)
      * @return Mono containing Page of Knowledge items
      */
-    fun getKnowledge(pageable: Pageable, filter: String? = null): Mono<Page<Knowledge>> {
+    fun getKnowledge(
+        pageable: Pageable,
+        filter: String? = null,
+    ): Mono<Page<Knowledge>> {
         // TODO: Implement filter support for metadata queries
         return paginationHelper.paginate(
             knowledgeRepository.findAllOrderedByCode(pageable),
             knowledgeRepository.count(),
-            pageable
+            pageable,
         )
     }
-    
+
     /**
      * Get single knowledge item by code.
      *
      * @param code Knowledge code identifier
      * @return Mono containing Knowledge or empty if not found
      */
-    fun getKnowledgeByCode(code: String): Mono<Knowledge> {
-        return knowledgeRepository.findByCode(code)
-    }
+    fun getKnowledgeByCode(code: String): Mono<Knowledge> = knowledgeRepository.findByCode(code)
 
     /**
      * Batch load knowledge items by codes.
@@ -52,8 +52,8 @@ class KnowledgeService(
         if (codes.isEmpty()) {
             return Mono.just(emptyMap())
         }
-        return knowledgeRepository.findByCodeIn(codes)
+        return knowledgeRepository
+            .findByCodeIn(codes)
             .collectMap { it.code }
     }
 }
-

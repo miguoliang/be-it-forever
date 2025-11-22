@@ -9,6 +9,5 @@ import jakarta.validation.constraints.Min
 data class ReviewRequestDto(
     @field:Min(0)
     @field:Max(5)
-    val quality: Int
+    val quality: Int,
 )
-

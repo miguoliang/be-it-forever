@@ -10,9 +10,9 @@ import reactor.core.publisher.Mono
 @Repository
 interface CardTypeRepository : ReactiveCrudRepository<CardType, String> {
     fun findByCode(code: String): Mono<CardType>
+
     fun findByName(name: String): Mono<CardType>
 
     @Query("SELECT * FROM card_types WHERE code IN (:codes)")
     fun findByCodeIn(codes: Collection<String>): Flux<CardType>
 }
-
