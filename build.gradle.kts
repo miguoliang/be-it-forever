@@ -64,7 +64,7 @@ dependencies {
     implementation("io.smallrye.reactive:mutiny-kotlin")
 
     // Hypersistence Utils for JSONB support
-    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-71:3.12.0")
 
     // Qute - Quarkus reactive template engine
     implementation("io.quarkus:quarkus-qute")

@@ -1,6 +1,7 @@
 package com.miguoliang.englishlearning.repository
 
 import com.miguoliang.englishlearning.common.Pageable
+import com.miguoliang.englishlearning.dto.AccountCardListProjection
 import com.miguoliang.englishlearning.model.AccountCard
 import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase
 import io.quarkus.panache.common.Page
@@ -27,27 +28,6 @@ class AccountCardRepository : PanacheRepositoryBase<AccountCard, Long> {
         REVIEW, // nextReviewDate <= now
         DUE, // nextReviewDate <= now (alias for REVIEW)
     }
-
-    /**
-     * Find all cards for an account (no filters, no pagination).
-     */
-    suspend fun findByAccountId(accountId: Long): List<AccountCard> =
-        find("accountId", accountId).list<AccountCard>().awaitSuspending()
-
-    /**
-     * Find a specific card by account, knowledge, and card type.
-     */
-    suspend fun findByAccountIdAndKnowledgeCodeAndCardTypeCode(
-        accountId: Long,
-        knowledgeCode: String,
-        cardTypeCode: String,
-    ): AccountCard? =
-        find(
-            "accountId = ?1 and knowledgeCode = ?2 and cardTypeCode = ?3",
-            accountId,
-            knowledgeCode,
-            cardTypeCode,
-        ).firstResult<AccountCard>().awaitSuspending()
 
     /**
      * Dynamic query method that handles all filter combinations.
@@ -130,16 +110,19 @@ class AccountCardRepository : PanacheRepositoryBase<AccountCard, Long> {
             StatusFilter.NEW -> {
                 conditions.add("repetitions = 0")
             }
+
             StatusFilter.LEARNING -> {
                 conditions.add("repetitions > 0 and repetitions < 3")
             }
+
             StatusFilter.REVIEW, StatusFilter.DUE -> {
                 require(now != null) { "now parameter is required for REVIEW/DUE status filter" }
                 conditions.add("nextReviewDate <= ?$paramIndex")
                 params.add(now)
-                paramIndex++
             }
-            null -> { /* no status filter */ }
+
+            null -> { /* no status filter */
+            }
         }
 
         val whereClause = conditions.joinToString(" and ")
@@ -184,86 +167,6 @@ class AccountCardRepository : PanacheRepositoryBase<AccountCard, Long> {
         date: LocalDateTime,
         cardTypeCode: String,
     ): Long = countWithFilters(accountId, cardTypeCode, StatusFilter.DUE, date)
-
-    suspend fun findByAccountId(
-        accountId: Long,
-        pageable: Pageable,
-    ): List<AccountCard> = findWithFilters(accountId, null, null, null, pageable)
-
-    suspend fun countByAccountId(accountId: Long): Long = countWithFilters(accountId, null, null, null)
-
-    suspend fun findByAccountIdAndCardTypeCode(
-        accountId: Long,
-        cardTypeCode: String,
-        pageable: Pageable,
-    ): List<AccountCard> = findWithFilters(accountId, cardTypeCode, null, null, pageable)
-
-    suspend fun countByAccountIdAndCardTypeCode(
-        accountId: Long,
-        cardTypeCode: String,
-    ): Long = countWithFilters(accountId, cardTypeCode, null, null)
-
-    suspend fun findByAccountIdAndStatusNew(
-        accountId: Long,
-        pageable: Pageable,
-    ): List<AccountCard> = findWithFilters(accountId, null, StatusFilter.NEW, null, pageable)
-
-    suspend fun countByAccountIdAndStatusNew(accountId: Long): Long =
-        countWithFilters(accountId, null, StatusFilter.NEW, null)
-
-    suspend fun findByAccountIdAndStatusLearning(
-        accountId: Long,
-        pageable: Pageable,
-    ): List<AccountCard> = findWithFilters(accountId, null, StatusFilter.LEARNING, null, pageable)
-
-    suspend fun countByAccountIdAndStatusLearning(accountId: Long): Long =
-        countWithFilters(accountId, null, StatusFilter.LEARNING, null)
-
-    suspend fun findByAccountIdAndStatusReview(
-        accountId: Long,
-        date: LocalDateTime,
-        pageable: Pageable,
-    ): List<AccountCard> = findWithFilters(accountId, null, StatusFilter.REVIEW, date, pageable)
-
-    suspend fun countByAccountIdAndStatusReview(
-        accountId: Long,
-        date: LocalDateTime,
-    ): Long = countWithFilters(accountId, null, StatusFilter.REVIEW, date)
-
-    suspend fun findByAccountIdAndCardTypeCodeAndStatusNew(
-        accountId: Long,
-        cardTypeCode: String,
-        pageable: Pageable,
-    ): List<AccountCard> = findWithFilters(accountId, cardTypeCode, StatusFilter.NEW, null, pageable)
-
-    suspend fun countByAccountIdAndCardTypeCodeAndStatusNew(
-        accountId: Long,
-        cardTypeCode: String,
-    ): Long = countWithFilters(accountId, cardTypeCode, StatusFilter.NEW, null)
-
-    suspend fun findByAccountIdAndCardTypeCodeAndStatusLearning(
-        accountId: Long,
-        cardTypeCode: String,
-        pageable: Pageable,
-    ): List<AccountCard> = findWithFilters(accountId, cardTypeCode, StatusFilter.LEARNING, null, pageable)
-
-    suspend fun countByAccountIdAndCardTypeCodeAndStatusLearning(
-        accountId: Long,
-        cardTypeCode: String,
-    ): Long = countWithFilters(accountId, cardTypeCode, StatusFilter.LEARNING, null)
-
-    suspend fun findByAccountIdAndCardTypeCodeAndStatusReview(
-        accountId: Long,
-        cardTypeCode: String,
-        date: LocalDateTime,
-        pageable: Pageable,
-    ): List<AccountCard> = findWithFilters(accountId, cardTypeCode, StatusFilter.REVIEW, date, pageable)
-
-    suspend fun countByAccountIdAndCardTypeCodeAndStatusReview(
-        accountId: Long,
-        cardTypeCode: String,
-        date: LocalDateTime,
-    ): Long = countWithFilters(accountId, cardTypeCode, StatusFilter.REVIEW, date)
 
     // ========== Statistics methods ==========
 
@@ -371,7 +274,7 @@ class AccountCardRepository : PanacheRepositoryBase<AccountCard, Long> {
         cardTypeCode: String? = null,
         statusFilter: StatusFilter? = null,
         now: LocalDateTime? = null,
-    ): List<com.miguoliang.englishlearning.dto.AccountCardListProjection> {
+    ): List<AccountCardListProjection> {
         // Build HQL query with constructor expression for projections
         val hql =
             buildString {
@@ -412,17 +315,62 @@ class AccountCardRepository : PanacheRepositoryBase<AccountCard, Long> {
                         require(now != null) { "now parameter required for DUE status filter" }
                         append(" AND ac.nextReviewDate <= :now")
                     }
+
+                    null -> {}
+                }
+            }
+
+        // Build count query with same filters
+        val countHql =
+            buildString {
+                append(
+                    """
+                    SELECT COUNT(ac.id)
+                    FROM AccountCard ac
+                    WHERE ac.accountId = :accountId
+                    """.trimIndent(),
+                )
+
+                // Apply same filters as main query
+                if (cardTypeCode != null) {
+                    append(" AND ac.cardTypeCode = :cardTypeCode")
+                }
+
+                when (statusFilter) {
+                    StatusFilter.NEW -> append(" AND ac.repetitions = 0")
+                    StatusFilter.LEARNING -> append(" AND ac.repetitions > 0 AND ac.repetitions < 4")
+                    StatusFilter.REVIEW -> append(" AND ac.repetitions >= 4")
+                    StatusFilter.DUE -> {
+                        append(" AND ac.nextReviewDate <= :now")
+                    }
+
                     null -> {}
                 }
             }
 
         val session = sessionFactory.openSession().awaitSuspending()
         try {
+            // Execute count query
+            val countQuery =
+                session
+                    .createQuery<Long>(countHql, Long::class.java)
+                    .setParameter("accountId", accountId)
+
+            if (cardTypeCode != null) {
+                countQuery.setParameter("cardTypeCode", cardTypeCode)
+            }
+            if (statusFilter == StatusFilter.DUE) {
+                countQuery.setParameter("now", now)
+            }
+
+            val totalElements = countQuery.singleResult.awaitSuspending()
+
+            // Execute main query
             val query =
                 session
-                    .createQuery<com.miguoliang.englishlearning.dto.AccountCardListProjection>(
+                    .createQuery<AccountCardListProjection>(
                         hql,
-                        com.miguoliang.englishlearning.dto.AccountCardListProjection::class.java,
+                        AccountCardListProjection::class.java,
                     ).setParameter("accountId", accountId)
                     .setFirstResult(pageable.page * pageable.size)
                     .setMaxResults(pageable.size)
@@ -430,7 +378,7 @@ class AccountCardRepository : PanacheRepositoryBase<AccountCard, Long> {
             if (cardTypeCode != null) {
                 query.setParameter("cardTypeCode", cardTypeCode)
             }
-            if (statusFilter == StatusFilter.DUE && now != null) {
+            if (statusFilter == StatusFilter.DUE) {
                 query.setParameter("now", now)
             }
 

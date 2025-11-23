@@ -2,6 +2,7 @@ package com.miguoliang.englishlearning.service
 
 import com.miguoliang.englishlearning.common.Page
 import com.miguoliang.englishlearning.common.Pageable
+import com.miguoliang.englishlearning.dto.AccountCardListProjection
 import com.miguoliang.englishlearning.model.AccountCard
 import com.miguoliang.englishlearning.model.ReviewHistory
 import com.miguoliang.englishlearning.repository.AccountCardRepository
@@ -137,106 +138,6 @@ class AccountCardService(
     }
 
     /**
-     * List account cards with filters.
-     *
-     * @param accountId Account ID
-     * @param pageable Pagination parameters
-     * @param cardTypeCode Optional card type filter
-     * @param status Optional status filter (new, learning, review, all)
-     *   - `new`: repetitions = 0
-     *   - `learning`: repetitions > 0 and < 3
-     *   - `review`: next_review_date <= today
-     *   - `all` or null: No status filter
-     * @return Page of AccountCard items
-     */
-    suspend fun getAccountCards(
-        accountId: Long,
-        pageable: Pageable,
-        cardTypeCode: String? = null,
-        status: String? = null,
-    ): Page<AccountCard> {
-        val now = LocalDateTime.now()
-        val effectiveStatus = if (status == null || status == "all") null else status
-
-        return when {
-            cardTypeCode != null && effectiveStatus == "new" -> {
-                paginationHelper.paginate(
-                    accountCardRepository.findByAccountIdAndCardTypeCodeAndStatusNew(
-                        accountId,
-                        cardTypeCode,
-                        pageable,
-                    ),
-                    accountCardRepository.countByAccountIdAndCardTypeCodeAndStatusNew(accountId, cardTypeCode),
-                    pageable,
-                )
-            }
-            cardTypeCode != null && effectiveStatus == "learning" -> {
-                paginationHelper.paginate(
-                    accountCardRepository.findByAccountIdAndCardTypeCodeAndStatusLearning(
-                        accountId,
-                        cardTypeCode,
-                        pageable,
-                    ),
-                    accountCardRepository.countByAccountIdAndCardTypeCodeAndStatusLearning(accountId, cardTypeCode),
-                    pageable,
-                )
-            }
-            cardTypeCode != null && effectiveStatus == "review" -> {
-                paginationHelper.paginate(
-                    accountCardRepository.findByAccountIdAndCardTypeCodeAndStatusReview(
-                        accountId,
-                        cardTypeCode,
-                        now,
-                        pageable,
-                    ),
-                    accountCardRepository.countByAccountIdAndCardTypeCodeAndStatusReview(
-                        accountId,
-                        cardTypeCode,
-                        now,
-                    ),
-                    pageable,
-                )
-            }
-            cardTypeCode != null -> {
-                paginationHelper.paginate(
-                    accountCardRepository.findByAccountIdAndCardTypeCode(accountId, cardTypeCode, pageable),
-                    accountCardRepository.countByAccountIdAndCardTypeCode(accountId, cardTypeCode),
-                    pageable,
-                )
-            }
-            effectiveStatus == "new" -> {
-                paginationHelper.paginate(
-                    accountCardRepository.findByAccountIdAndStatusNew(accountId, pageable),
-                    accountCardRepository.countByAccountIdAndStatusNew(accountId),
-                    pageable,
-                )
-            }
-            effectiveStatus == "learning" -> {
-                paginationHelper.paginate(
-                    accountCardRepository.findByAccountIdAndStatusLearning(accountId, pageable),
-                    accountCardRepository.countByAccountIdAndStatusLearning(accountId),
-                    pageable,
-                )
-            }
-            effectiveStatus == "review" -> {
-                paginationHelper.paginate(
-                    accountCardRepository.findByAccountIdAndStatusReview(accountId, now, pageable),
-                    accountCardRepository.countByAccountIdAndStatusReview(accountId, now),
-                    pageable,
-                )
-            }
-            else -> {
-                paginationHelper.paginate(
-                    accountCardRepository.findByAccountId(accountId, pageable),
-                    accountCardRepository.countByAccountId(accountId),
-                    pageable,
-                )
-            }
-        }
-    }
-
-    /**
-     * OPTIMIZED: Get account cards with filters using projection query.
      * Uses single JOIN query instead of 3 separate queries.
      *
      * Performance: ~60-70% reduction in database round-trips and data transfer.
@@ -247,28 +148,20 @@ class AccountCardService(
      * @param status Optional status filter
      * @return List of projections that can be converted to DTOs without additional queries
      */
-    suspend fun getAccountCardsOptimized(
+    suspend fun getAccountCards(
         accountId: Long,
         pageable: Pageable,
         cardTypeCode: String? = null,
-        status: String? = null,
-    ): List<com.miguoliang.englishlearning.dto.AccountCardListProjection> {
+        status: AccountCardRepository.StatusFilter? = null,
+    ): List<AccountCardListProjection> {
         val now = LocalDateTime.now()
-        val statusFilter =
-            when (status) {
-                "new" -> AccountCardRepository.StatusFilter.NEW
-                "learning" -> AccountCardRepository.StatusFilter.LEARNING
-                "review" -> AccountCardRepository.StatusFilter.REVIEW
-                "due" -> AccountCardRepository.StatusFilter.DUE
-                else -> null
-            }
 
         return accountCardRepository.findProjectionsWithFilters(
             accountId = accountId,
             pageable = pageable,
             cardTypeCode = cardTypeCode,
-            statusFilter = statusFilter,
-            now = if (statusFilter == AccountCardRepository.StatusFilter.DUE) now else null,
+            statusFilter = status,
+            now = if (status == AccountCardRepository.StatusFilter.DUE) now else null,
         )
     }
 
@@ -279,23 +172,15 @@ class AccountCardService(
     suspend fun getCountWithFilters(
         accountId: Long,
         cardTypeCode: String? = null,
-        status: String? = null,
+        status: AccountCardRepository.StatusFilter? = null,
     ): Long {
         val now = LocalDateTime.now()
-        val statusFilter =
-            when (status) {
-                "new" -> AccountCardRepository.StatusFilter.NEW
-                "learning" -> AccountCardRepository.StatusFilter.LEARNING
-                "review" -> AccountCardRepository.StatusFilter.REVIEW
-                "due" -> AccountCardRepository.StatusFilter.DUE
-                else -> null
-            }
 
         return accountCardRepository.countWithFilters(
             accountId = accountId,
             cardTypeCode = cardTypeCode,
-            statusFilter = statusFilter,
-            now = if (statusFilter == AccountCardRepository.StatusFilter.DUE) now else null,
+            statusFilter = status,
+            now = if (status == AccountCardRepository.StatusFilter.DUE) now else null,
         )
     }
 

@@ -6,6 +6,7 @@ import com.miguoliang.englishlearning.dto.PageDto
 import com.miguoliang.englishlearning.dto.PageInfoDto
 import com.miguoliang.englishlearning.dto.ReviewRequestDto
 import com.miguoliang.englishlearning.dto.toDto
+import com.miguoliang.englishlearning.repository.AccountCardRepository
 import com.miguoliang.englishlearning.service.AccountCardService
 import com.miguoliang.englishlearning.service.CardTemplateService
 import com.miguoliang.englishlearning.service.CardTypeService
@@ -67,8 +68,8 @@ class AccountCardResource(
     @Path("/me/cards")
     @Authenticated
     suspend fun listMyCards(
-        @QueryParam("card_type_code") card_type_code: String?,
-        @QueryParam("status") status: String?,
+        @QueryParam("card_type_code") cardTypeCode: String?,
+        @QueryParam("status") status: AccountCardRepository.StatusFilter?,
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int,
     ): Response {
@@ -76,10 +77,10 @@ class AccountCardResource(
 
         val pageable = PageRequest.of(page, size)
         // OPTIMIZED: Use projection query to fetch data in single JOIN query
-        val projections = accountCardService.getAccountCardsOptimized(accountId, pageable, card_type_code, status)
+        val projections = accountCardService.getAccountCards(accountId, pageable, cardTypeCode, status)
 
         // Get total count for pagination metadata (still need this, but only 1 count query)
-        val totalCount = accountCardService.getCountWithFilters(accountId, card_type_code, status)
+        val totalCount = accountCardService.getCountWithFilters(accountId, cardTypeCode, status)
 
         // Convert projections to DTOs (no additional queries needed)
         val dtos = projections.map { it.toDto() }
@@ -112,7 +113,7 @@ class AccountCardResource(
     suspend fun listAccountCards(
         @PathParam("accountId") accountId: Long,
         @QueryParam("card_type_code") card_type_code: String?,
-        @QueryParam("status") status: String?,
+        @QueryParam("status") status: AccountCardRepository.StatusFilter?,
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int,
     ): Response {
@@ -122,38 +123,15 @@ class AccountCardResource(
         val pageResult = accountCardService.getAccountCards(accountId, pageable, card_type_code, status)
 
         // Batch load knowledge and card types to avoid N+1
-        val knowledgeCodes = pageResult.content.map { it.knowledgeCode }.distinct()
-        val cardTypeCodes = pageResult.content.map { it.cardTypeCode }.distinct()
+        val knowledgeCodes = pageResult.map { it.knowledgeCode }.distinct()
+        val cardTypeCodes = pageResult.map { it.cardTypeCode }.distinct()
 
         val knowledgeMap = knowledgeService.getKnowledgeByCodes(knowledgeCodes)
         val cardTypeMap = cardTypeService.getCardTypesByCodes(cardTypeCodes)
 
-        val dtos =
-            pageResult.content.mapNotNull { card ->
-                val knowledge = knowledgeMap[card.knowledgeCode]
-                val cardType = cardTypeMap[card.cardTypeCode]
-                if (knowledge != null && cardType != null) {
-                    card.toDto(
-                        knowledge = knowledge.toDto(),
-                        cardType = cardType.toDto(),
-                    )
-                } else {
-                    null
-                }
-            }
-
         return Response
             .ok(
-                PageDto(
-                    content = dtos,
-                    page =
-                        PageInfoDto(
-                            number = pageResult.number,
-                            size = pageResult.size,
-                            totalElements = pageResult.totalElements,
-                            totalPages = pageResult.totalPages,
-                        ),
-                ),
+                pageResult,
             ).build()
     }
 
