@@ -88,6 +88,14 @@ java {
 
 tasks.withType<Test> {
     systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
+    // Required for Java 24+ module access - Vert.x needs access to java.lang internals
+    jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
+}
+
+// Configure JVM args for Quarkus dev/run tasks (Java 24+ module access)
+// This applies to all Java exec tasks including quarkusDev
+tasks.withType<JavaExec> {
+    jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
 }
 
 allOpen {
