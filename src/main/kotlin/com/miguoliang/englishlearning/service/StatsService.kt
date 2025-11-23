@@ -2,13 +2,13 @@ package com.miguoliang.englishlearning.service
 
 import com.miguoliang.englishlearning.dto.StatsDto
 import com.miguoliang.englishlearning.repository.AccountCardRepository
-import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Singleton
 import java.time.LocalDateTime
 
 /**
  * Calculates account statistics.
  */
-@ApplicationScoped
+@Singleton
 class StatsService(
     private val accountCardRepository: AccountCardRepository,
 ) {

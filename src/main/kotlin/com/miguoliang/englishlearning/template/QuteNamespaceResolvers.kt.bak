@@ -1,0 +1,212 @@
+package com.miguoliang.englishlearning.template
+
+import io.quarkus.qute.TemplateGlobal
+
+/**
+ * Qute Template Global Functions - Available in all templates via namespaces.
+ * These are static functions accessible without needing to pass data to the template.
+ *
+ * Usage in templates:
+ * - {str:orDefault(description, 'No description')}
+ * - {str:join(list, ', ')}
+ * - {math:max(a, b)}
+ */
+
+/**
+ * String utility namespace for templates.
+ * Access as: {str:function(...)}
+ */
+@TemplateGlobal(name = "str")
+object StringNamespace {
+    /**
+     * Returns the value or a default if null/empty.
+     * Usage: {str:orDefault(description, 'N/A')}
+     */
+    @JvmStatic
+    fun orDefault(
+        value: String?,
+        defaultValue: String,
+    ): String {
+        return if (value.isNullOrBlank()) defaultValue else value
+    }
+
+    /**
+     * Joins a list of items with a separator.
+     * Usage: {str:join(tags, ', ')}
+     */
+    @JvmStatic
+    fun join(
+        items: List<*>,
+        separator: String,
+    ): String {
+        return items.joinToString(separator)
+    }
+
+    /**
+     * Repeats a string n times.
+     * Usage: {str:repeat('*', 5)} outputs: *****
+     */
+    @JvmStatic
+    fun repeat(
+        str: String,
+        count: Int,
+    ): String {
+        return str.repeat(count)
+    }
+
+    /**
+     * Checks if string contains another string (case-insensitive).
+     * Usage: {#if str:contains(name, 'test')}...{/if}
+     */
+    @JvmStatic
+    fun contains(
+        str: String,
+        substring: String,
+    ): Boolean {
+        return str.contains(substring, ignoreCase = true)
+    }
+}
+
+/**
+ * Math utility namespace for templates.
+ * Access as: {math:function(...)}
+ */
+@TemplateGlobal(name = "math")
+object MathNamespace {
+    /**
+     * Returns the maximum of two numbers.
+     * Usage: {math:max(score1, score2)}
+     */
+    @JvmStatic
+    fun max(
+        a: Number,
+        b: Number,
+    ): Double {
+        return maxOf(a.toDouble(), b.toDouble())
+    }
+
+    /**
+     * Returns the minimum of two numbers.
+     * Usage: {math:min(score1, score2)}
+     */
+    @JvmStatic
+    fun min(
+        a: Number,
+        b: Number,
+    ): Double {
+        return minOf(a.toDouble(), b.toDouble())
+    }
+
+    /**
+     * Rounds a number to specified decimal places.
+     * Usage: {math:round(3.14159, 2)} outputs: 3.14
+     */
+    @JvmStatic
+    fun round(
+        number: Number,
+        decimalPlaces: Int,
+    ): Double {
+        val multiplier = Math.pow(10.0, decimalPlaces.toDouble())
+        return Math.round(number.toDouble() * multiplier) / multiplier
+    }
+
+    /**
+     * Calculates percentage.
+     * Usage: {math:percent(25, 100)} outputs: 25.0
+     */
+    @JvmStatic
+    fun percent(
+        value: Number,
+        total: Number,
+    ): Double {
+        if (total.toDouble() == 0.0) return 0.0
+        return (value.toDouble() / total.toDouble()) * 100.0
+    }
+}
+
+/**
+ * Collection utility namespace for templates.
+ * Access as: {coll:function(...)}
+ */
+@TemplateGlobal(name = "coll")
+object CollectionNamespace {
+    /**
+     * Checks if a collection contains an item.
+     * Usage: {#if coll:contains(list, item)}...{/if}
+     */
+    @JvmStatic
+    fun contains(
+        collection: Collection<*>,
+        item: Any,
+    ): Boolean {
+        return collection.contains(item)
+    }
+
+    /**
+     * Gets the size of a collection.
+     * Usage: {coll:size(myList)}
+     */
+    @JvmStatic
+    fun size(collection: Collection<*>): Int {
+        return collection.size
+    }
+
+    /**
+     * Checks if collection is empty.
+     * Usage: {#if coll:isEmpty(myList)}...{/if}
+     */
+    @JvmStatic
+    fun isEmpty(collection: Collection<*>): Boolean {
+        return collection.isEmpty()
+    }
+
+    /**
+     * Creates a range of numbers.
+     * Usage: {#for i in coll:range(1, 5)}{i}{/for} outputs: 12345
+     */
+    @JvmStatic
+    fun range(
+        start: Int,
+        end: Int,
+    ): List<Int> {
+        return (start..end).toList()
+    }
+}
+
+/**
+ * Conditional utility namespace for templates.
+ * Access as: {cond:function(...)}
+ */
+@TemplateGlobal(name = "cond")
+object ConditionalNamespace {
+    /**
+     * Returns first value if condition is true, otherwise second value.
+     * Usage: {cond:ifElse(user.isActive, 'Active', 'Inactive')}
+     */
+    @JvmStatic
+    fun ifElse(
+        condition: Boolean,
+        trueValue: Any,
+        falseValue: Any,
+    ): Any {
+        return if (condition) trueValue else falseValue
+    }
+
+    /**
+     * Checks if value is null.
+     * Usage: {#if cond:isNull(description)}...{/if}
+     */
+    @JvmStatic
+    fun isNull(value: Any?): Boolean {
+        return value == null
+    }
+
+    /**
+     * Checks if value is not null.
+     * Usage: {#if cond:isNotNull(description)}...{/if}
+     */
+    @JvmStatic
+    fun isNotNull(value: Any?): Boolean {
+        return value != null
+    }
+}

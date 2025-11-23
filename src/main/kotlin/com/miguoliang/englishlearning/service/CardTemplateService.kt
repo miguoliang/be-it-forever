@@ -6,32 +6,41 @@ import com.miguoliang.englishlearning.model.Template
 import com.miguoliang.englishlearning.repository.CardTypeTemplateRelRepository
 import com.miguoliang.englishlearning.repository.KnowledgeRelRepository
 import com.miguoliang.englishlearning.repository.KnowledgeRepository
-import freemarker.template.Configuration
-import jakarta.enterprise.context.ApplicationScoped
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.StringWriter
+import com.miguoliang.englishlearning.template.CardRenderData
+import com.miguoliang.englishlearning.template.MetadataTemplateData
+import com.miguoliang.englishlearning.template.RelatedKnowledgeTemplateData
+import io.quarkus.qute.Engine
+import io.smallrye.mutiny.Uni
+import io.smallrye.mutiny.coroutines.awaitSuspending
+import jakarta.inject.Singleton
 import java.nio.charset.StandardCharsets
-import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import io.quarkus.qute.Template as QuteTemplate
 
 /**
- * Renders card templates with knowledge data using FreeMarker template engine.
+ * Renders card templates with knowledge data using Qute reactive template engine.
  * Loads templates from database via TemplateService and card_type_template_rel.
- * Uses FreeMarker Template Language (FTL) syntax: `${name}`, `${description}`, `${metadata.level}`,
- * `<#list relatedKnowledge as item>...${item.name}...</#list>` (iterates over referenced knowledge entities via knowledge_rel).
- * Metadata can be accessed via dot notation (e.g., `${metadata.key}` or `${metadata.nested.key}`).
- * Template format field value is `ftl` for FreeMarker templates.
+ * Uses Qute syntax: `{name}`, `{description}`, `{metadata.level}`,
+ * `{#for item in relatedKnowledge}{item.name}{/for}` (iterates over referenced knowledge entities via knowledge_rel).
+ * Metadata can be accessed via dot notation (e.g., `{metadata.level}` or `{metadata.nested.key}`).
+ * Template format field value is `qute` for Qute templates.
+ *
+ * Performance: Parsed templates are cached in memory to avoid re-parsing on every render.
  */
-@ApplicationScoped
+@Singleton
 class CardTemplateService(
     private val templateService: TemplateService,
     private val cardTypeTemplateRelRepository: CardTypeTemplateRelRepository,
     private val knowledgeRelRepository: KnowledgeRelRepository,
     private val knowledgeRepository: KnowledgeRepository,
-    private val freeMarkerConfig: Configuration,
+    private val quteEngine: Engine,
 ) {
+    // Cache for parsed Qute templates - keyed by template code
+    // ConcurrentHashMap provides thread-safe caching without blocking
+    private val templateCache = ConcurrentHashMap<String, QuteTemplate>()
+
     /**
-     * Generates content using FreeMarker template for specified role.
+     * Generates content using Qute template for specified role.
      *
      * @param cardType Card type
      * @param knowledge Knowledge item to render
@@ -57,16 +66,16 @@ class CardTemplateService(
                 )
 
         // Validate template format
-        if (template.format != "ftl") {
+        if (template.format != "qute") {
             throw IllegalArgumentException(
-                "Unsupported template format: ${template.format}. Expected 'ftl' for FreeMarker.",
+                "Unsupported template format: ${template.format}. Expected 'qute' for Qute templates.",
             )
         }
 
         // Load related knowledge items
         val relatedKnowledge = loadRelatedKnowledge(knowledge.code)
 
-        // Render template using FreeMarker
+        // Render template using Qute (fully reactive)
         return renderTemplate(template, knowledge, relatedKnowledge)
     }
 
@@ -87,7 +96,8 @@ class CardTemplateService(
     }
 
     /**
-     * Renders FreeMarker template with knowledge data.
+     * Renders Qute template with knowledge data reactively.
+     * No blocking I/O - fully async/await compatible.
      *
      * @param template Template entity from database
      * @param knowledge Knowledge item to render
@@ -98,77 +108,80 @@ class CardTemplateService(
         template: Template,
         knowledge: Knowledge,
         relatedKnowledge: List<Knowledge>,
-    ): String {
-        // Execute FreeMarker rendering on IO dispatcher to avoid blocking
-        return withContext(Dispatchers.IO) {
-            try {
-                val templateContent = String(template.content, StandardCharsets.UTF_8)
+    ): String =
+        try {
+            // Get or parse template (with caching for performance)
+            val quteTemplate =
+                templateCache.computeIfAbsent(template.code) {
+                    val templateContent = String(template.content, StandardCharsets.UTF_8)
+                    // Parse template once and cache it
+                    quteEngine.parse(templateContent)
+                }
 
-                // Register template with FreeMarker StringTemplateLoader
-                // Use unique name per request to avoid conflicts in concurrent scenarios
-                val templateLoader =
-                    freeMarkerConfig.templateLoader as
-                        freemarker.cache.StringTemplateLoader
-                val templateName = "template_${template.code}_${UUID.randomUUID()}"
+            // Prepare data model for Qute
+            val dataModel = prepareDataModel(knowledge, relatedKnowledge)
 
-                templateLoader.putTemplate(templateName, templateContent)
-
-                // Get FreeMarker template
-                val fmTemplate = freeMarkerConfig.getTemplate(templateName)
-
-                // Prepare data model for FreeMarker
-                val dataModel = prepareDataModel(knowledge, relatedKnowledge)
-
-                // Render template
-                val writer = StringWriter()
-                fmTemplate.process(dataModel, writer)
-
-                writer.toString()
-            } catch (e: freemarker.template.TemplateException) {
-                throw RuntimeException("FreeMarker template error in template ${template.code}: ${e.message}", e)
-            } catch (e: java.io.IOException) {
-                throw RuntimeException("IO error rendering template ${template.code}: ${e.message}", e)
-            } catch (e: Exception) {
-                throw RuntimeException("Failed to render FreeMarker template: ${template.code}", e)
-            }
+            // Render template reactively: CompletionStage -> Uni -> awaitSuspending
+            val completionStage = quteTemplate.data(dataModel).renderAsync()
+            Uni.createFrom().completionStage(completionStage).awaitSuspending()
+        } catch (e: io.quarkus.qute.TemplateException) {
+            throw RuntimeException("Qute template error in template ${template.code}: ${e.message}", e)
+        } catch (e: Exception) {
+            throw RuntimeException("Failed to render Qute template: ${template.code}", e)
         }
+
+    /**
+     * Clears the template cache.
+     * Call this when templates are updated in the database.
+     */
+    fun clearCache() {
+        templateCache.clear()
     }
 
     /**
-     * Prepares data model for FreeMarker template.
-     * Converts Knowledge entities and metadata to FreeMarker-compatible data structures.
+     * Removes a specific template from cache.
+     * Call this when a template is updated in the database.
+     */
+    fun evictTemplate(templateCode: String) {
+        templateCache.remove(templateCode)
+    }
+
+    /**
+     * Prepares type-safe data model for Qute template.
+     * Converts Knowledge entities to type-safe template data classes.
+     * Using type-safe classes provides compile-time checking and IDE auto-completion.
      */
     private fun prepareDataModel(
         knowledge: Knowledge,
         relatedKnowledge: List<Knowledge>,
-    ): Map<String, Any> =
-        buildMap {
-            // Add main knowledge fields
-            put("name", knowledge.name)
-            put("description", knowledge.description ?: "")
-            put("code", knowledge.code)
+    ): CardRenderData {
+        // Convert metadata to template data
+        val metadataData =
+            knowledge.metadata?.let {
+                MetadataTemplateData(level = it.level)
+            } ?: MetadataTemplateData(level = null)
 
-            // Add metadata as nested map for dot notation access
-            put("metadata", knowledge.metadata?.let { convertMetadataToMap(it) } ?: emptyMap<String, Any>())
+        // Convert related knowledge to template data list
+        val relatedKnowledgeData =
+            relatedKnowledge.map { related ->
+                RelatedKnowledgeTemplateData(
+                    code = related.code,
+                    name = related.name,
+                    description = related.description ?: "",
+                    metadata =
+                        related.metadata?.let {
+                            MetadataTemplateData(level = it.level)
+                        } ?: MetadataTemplateData(level = null),
+                )
+            }
 
-            // Add related knowledge list for iteration
-            val relatedKnowledgeList =
-                relatedKnowledge.map { related ->
-                    mapOf(
-                        "code" to related.code,
-                        "name" to related.name,
-                        "description" to (related.description ?: ""),
-                        "metadata" to (related.metadata?.let { convertMetadataToMap(it) } ?: emptyMap<String, Any>()),
-                    )
-                }
-            put("relatedKnowledge", relatedKnowledgeList)
-        }
-
-    /**
-     * Converts Metadata object to Map for FreeMarker dot notation access.
-     */
-    private fun convertMetadataToMap(metadata: com.miguoliang.englishlearning.model.Metadata): Map<String, Any> =
-        buildMap {
-            metadata.level?.let { put("level", it) }
-        }
+        // Return type-safe CardRenderData
+        return CardRenderData(
+            name = knowledge.name,
+            description = knowledge.description ?: "",
+            code = knowledge.code,
+            metadata = metadataData,
+            relatedKnowledge = relatedKnowledgeData,
+        )
+    }
 }

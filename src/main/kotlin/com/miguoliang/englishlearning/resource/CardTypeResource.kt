@@ -1,54 +1,59 @@
-package com.miguoliang.englishlearning.controller
+package com.miguoliang.englishlearning.resource
 
+import com.miguoliang.englishlearning.common.PageRequest
 import com.miguoliang.englishlearning.dto.PageDto
 import com.miguoliang.englishlearning.dto.PageInfoDto
 import com.miguoliang.englishlearning.dto.toDto
 import com.miguoliang.englishlearning.service.CardTypeService
-import jakarta.ws.rs.*
+import jakarta.ws.rs.Consumes
+import jakarta.ws.rs.DefaultValue
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.PathParam
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 
 /**
- * REST controller for Card Type endpoints.
+ * REST resource for Card Type endpoints.
  * Access: Both operator and client roles (read-only).
  */
 @Path("/api/v1/card-types")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-class CardTypeController(
+class CardTypeResource(
     private val cardTypeService: CardTypeService,
 ) {
     /**
-     * List all available card types.
+     * List all available card types with database-level pagination.
      * GET /api/v1/card-types
+     *
+     * This endpoint now uses proper database pagination instead of loading all records into memory.
+     * Pagination happens at the database level for better performance and scalability.
      */
     @GET
     suspend fun listCardTypes(
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int,
     ): Response {
-        val cardTypes = cardTypeService.getAllCardTypes()
+        // Create pagination request
+        val pageable = PageRequest.of(page, size)
 
-        val total = cardTypes.size.toLong()
-        val start = page * size
-        val end = minOf(start + size, cardTypes.size)
-        val pagedContent =
-            if (start < cardTypes.size) {
-                cardTypes.subList(start, end)
-            } else {
-                emptyList()
-            }
+        // Get paginated results from service (database-level pagination)
+        val pageResult = cardTypeService.getCardTypes(pageable)
 
+        // Convert to DTO
         return Response
             .ok(
                 PageDto(
-                    content = pagedContent.map { it.toDto() },
+                    content = pageResult.content.map { it.toDto() },
                     page =
                         PageInfoDto(
-                            number = page,
-                            size = size,
-                            totalElements = total,
-                            totalPages = if (total > 0) ((total - 1) / size + 1).toInt() else 0,
+                            number = pageResult.number,
+                            size = pageResult.size,
+                            totalElements = pageResult.totalElements,
+                            totalPages = pageResult.totalPages,
                         ),
                 ),
             ).build()

@@ -1,32 +1,45 @@
-package com.miguoliang.englishlearning.controller
+package com.miguoliang.englishlearning.resource
 
 import com.miguoliang.englishlearning.common.PageRequest
-import com.miguoliang.englishlearning.dto.*
+import com.miguoliang.englishlearning.dto.InitializeCardsRequestDto
+import com.miguoliang.englishlearning.dto.PageDto
 import com.miguoliang.englishlearning.dto.PageInfoDto
+import com.miguoliang.englishlearning.dto.ReviewRequestDto
+import com.miguoliang.englishlearning.dto.toDto
 import com.miguoliang.englishlearning.service.AccountCardService
 import com.miguoliang.englishlearning.service.CardTemplateService
 import com.miguoliang.englishlearning.service.CardTypeService
 import com.miguoliang.englishlearning.service.KnowledgeService
 import jakarta.validation.Valid
-import jakarta.ws.rs.*
+import jakarta.ws.rs.Consumes
+import jakarta.ws.rs.DefaultValue
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.POST
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.PathParam
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import org.eclipse.microprofile.config.inject.ConfigProperty
 
 /**
- * REST controller for Account Card endpoints.
+ * REST resource for Account Card endpoints.
  * Access: client role (for /me endpoints) or operator role (for {accountId} endpoints).
  *
- * Note: JWT authentication is not yet implemented. For MVP, accountId is passed as path parameter.
- * TODO: Extract accountId from JWT token 'sub' claim for /me endpoints.
+ * Note: JWT authentication is not yet implemented. For MVP, accountId comes from configuration.
+ * TODO: Implement JWT authentication and extract accountId from JWT token 'sub' claim for /me endpoints.
+ * See: https://quarkus.io/guides/security-jwt
  */
 @Path("/api/v1/accounts")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-class AccountCardController(
+class AccountCardResource(
     private val accountCardService: AccountCardService,
     private val knowledgeService: KnowledgeService,
     private val cardTypeService: CardTypeService,
     private val cardTemplateService: CardTemplateService,
+    @ConfigProperty(name = "app.default.account.id") private val defaultAccountId: Long,
 ) {
     /**
      * List current account's cards with optional filtering.
@@ -41,32 +54,18 @@ class AccountCardController(
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int,
     ): Response {
-        // TODO: Extract accountId from JWT token
-        val accountId = 1L // Placeholder
+        // TODO: Extract accountId from JWT token (see class-level documentation)
+        val accountId = defaultAccountId
 
         val pageable = PageRequest.of(page, size)
-        val pageResult = accountCardService.getAccountCards(accountId, pageable, card_type_code, status)
+        // OPTIMIZED: Use projection query to fetch data in single JOIN query
+        val projections = accountCardService.getAccountCardsOptimized(accountId, pageable, card_type_code, status)
 
-        // Batch load knowledge and card types to avoid N+1
-        val knowledgeCodes = pageResult.content.map { it.knowledgeCode }.distinct()
-        val cardTypeCodes = pageResult.content.map { it.cardTypeCode }.distinct()
+        // Get total count for pagination metadata (still need this, but only 1 count query)
+        val totalCount = accountCardService.getCountWithFilters(accountId, card_type_code, status)
 
-        val knowledgeMap = knowledgeService.getKnowledgeByCodes(knowledgeCodes)
-        val cardTypeMap = cardTypeService.getCardTypesByCodes(cardTypeCodes)
-
-        val dtos =
-            pageResult.content.mapNotNull { card ->
-                val knowledge = knowledgeMap[card.knowledgeCode]
-                val cardType = cardTypeMap[card.cardTypeCode]
-                if (knowledge != null && cardType != null) {
-                    card.toDto(
-                        knowledge = knowledge.toDto(),
-                        cardType = cardType.toDto(),
-                    )
-                } else {
-                    null
-                }
-            }
+        // Convert projections to DTOs (no additional queries needed)
+        val dtos = projections.map { it.toDto() }
 
         return Response
             .ok(
@@ -74,10 +73,10 @@ class AccountCardController(
                     content = dtos,
                     page =
                         PageInfoDto(
-                            number = pageResult.number,
-                            size = pageResult.size,
-                            totalElements = pageResult.totalElements,
-                            totalPages = pageResult.totalPages,
+                            number = page,
+                            size = size,
+                            totalElements = totalCount,
+                            totalPages = ((totalCount + size - 1) / size).toInt(),
                         ),
                 ),
             ).build()
@@ -146,8 +145,8 @@ class AccountCardController(
     suspend fun getMyCard(
         @PathParam("cardId") cardId: Long,
     ): Response {
-        // TODO: Extract accountId from JWT token
-        val accountId = 1L // Placeholder
+        // TODO: Extract accountId from JWT token (see class-level documentation)
+        val accountId = defaultAccountId
 
         val card =
             accountCardService.getCardById(accountId, cardId)
@@ -184,8 +183,8 @@ class AccountCardController(
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int,
     ): Response {
-        // TODO: Extract accountId from JWT token
-        val accountId = 1L // Placeholder
+        // TODO: Extract accountId from JWT token (see class-level documentation)
+        val accountId = defaultAccountId
 
         val pageable = PageRequest.of(page, size)
         val pageResult = accountCardService.getDueCards(accountId, pageable, card_type_code)
@@ -239,8 +238,8 @@ class AccountCardController(
     @POST
     @Path("/me/cards:initialize")
     suspend fun initializeCards(request: InitializeCardsRequestDto?): Response {
-        // TODO: Extract accountId from JWT token
-        val accountId = 1L // Placeholder
+        // TODO: Extract accountId from JWT token (see class-level documentation)
+        val accountId = defaultAccountId
 
         val created = accountCardService.initializeCards(accountId, request?.cardTypeCodes)
         return Response.ok(mapOf("created" to created, "skipped" to 0)).build()
@@ -257,8 +256,8 @@ class AccountCardController(
         @PathParam("cardId") cardId: Long,
         @Valid request: ReviewRequestDto,
     ): Response {
-        // TODO: Extract accountId from JWT token
-        val accountId = 1L // Placeholder
+        // TODO: Extract accountId from JWT token (see class-level documentation)
+        val accountId = defaultAccountId
 
         // Validate quality range
         require(request.quality in 0..5) { "Quality must be between 0 and 5" }

@@ -2,9 +2,9 @@ package com.miguoliang.englishlearning.service
 
 import io.smallrye.mutiny.coroutines.awaitSuspending
 import io.vertx.mutiny.sqlclient.Pool
-import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Singleton
 
-@ApplicationScoped
+@Singleton
 class CodeGenerationService(
     private val pool: Pool,
 ) {
@@ -12,13 +12,22 @@ class CodeGenerationService(
         require(prefix in listOf("ST", "CS")) { "Invalid prefix: $prefix. Must be ST or CS" }
         require(prefix.length == 2) { "Prefix must be exactly 2 characters" }
 
-        val sequenceName = "code_seq_${prefix.lowercase()}"
+        // Use explicit sequence names to avoid SQL injection - no string interpolation in SQL
+        val sequenceName =
+            when (prefix.uppercase()) {
+                "ST" -> "code_seq_st"
+                "CS" -> "code_seq_cs"
+                else -> throw IllegalArgumentException("Invalid prefix: $prefix")
+            }
 
+        // Use parameterized query to prevent SQL injection
         val rowSet =
             pool
-                .query("SELECT nextval('$sequenceName')")
-                .execute()
-                .awaitSuspending()
+                .preparedQuery("SELECT nextval($1)")
+                .execute(
+                    io.vertx.mutiny.sqlclient.Tuple
+                        .of(sequenceName),
+                ).awaitSuspending()
 
         val row = rowSet.iterator().next()
         val nextValue = row.getLong(0)

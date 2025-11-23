@@ -564,7 +564,6 @@ style:
   MultilineRawStringIndentation:
     active: true
     indentSize: 4
-    trimmingMethod: 'trimIndent'
   NestedClassesVisibility:
     active: true
   NewLineAtEndOfFile:
@@ -615,7 +614,6 @@ style:
     active: true
   TrimMultilineRawString:
     active: true
-    trimmingMethod: 'trimIndent'
   UnderscoresInNumericLiterals:
     active: true
     acceptableLength: 4

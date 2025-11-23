@@ -3,7 +3,7 @@ plugins {
     kotlin("plugin.allopen") version "2.3.0-RC"
     id("io.quarkus") version "3.29.4"
     // Code quality plugins
-    id("io.gitlab.arturbosch.detekt") version "1.23.7"
+    id("dev.detekt") version "2.0.0-alpha.1"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
 }
 
@@ -46,6 +46,10 @@ dependencies {
 
     // Health & Metrics
     implementation("io.quarkus:quarkus-smallrye-health")
+    implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
+
+    // Observability - Distributed Tracing
+    implementation("io.quarkus:quarkus-opentelemetry")
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
@@ -57,8 +61,8 @@ dependencies {
     // Hypersistence Utils for JSONB support
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
 
-    // FreeMarker template engine
-    implementation("org.freemarker:freemarker:2.3.32")
+    // Qute - Quarkus reactive template engine
+    implementation("io.quarkus:quarkus-qute")
 
     // Jackson Kotlin
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -94,28 +98,21 @@ kotlin {
     }
 }
 
-// Detekt configuration
+// Detekt 2.0.0-alpha.1 configuration
+// Note: Custom config disabled due to breaking changes in 2.0
+// TODO: Migrate detekt.yml to Detekt 2.0 config format
 detekt {
-    buildUponDefaultConfig = true
-    allRules = false
-    config.setFrom("$projectDir/config/detekt/detekt.yml")
-    baseline = file("$projectDir/config/detekt/baseline.xml")
     parallel = true
     ignoreFailures = true
     autoCorrect = false
 }
 
-dependencies {
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.7")
-}
-
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    jvmTarget = "25"
+// Configure JVM target for Detekt 2.0.0-alpha.1
+tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+    jvmTarget.set("24") // Detekt 2.0.0-alpha.1 supports up to JVM 24
     reports {
         html.required.set(true)
-        xml.required.set(true)
         sarif.required.set(true)
-        md.required.set(true)
     }
 }
 

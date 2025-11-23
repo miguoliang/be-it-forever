@@ -4,12 +4,12 @@ import com.miguoliang.englishlearning.common.Page
 import com.miguoliang.englishlearning.common.Pageable
 import com.miguoliang.englishlearning.model.Knowledge
 import com.miguoliang.englishlearning.repository.KnowledgeRepository
-import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Singleton
 
 /**
  * Manages knowledge operations.
  */
-@ApplicationScoped
+@Singleton
 class KnowledgeService(
     private val knowledgeRepository: KnowledgeRepository,
     private val paginationHelper: PaginationHelper,

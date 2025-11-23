@@ -2,14 +2,14 @@ package com.miguoliang.englishlearning.service
 
 import com.miguoliang.englishlearning.common.Page
 import com.miguoliang.englishlearning.common.Pageable
-import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Singleton
 
 /**
  * Reusable utility service that encapsulates pagination pattern.
  * Provides paginate() method that combines List<T> data and Long count into Page<T>.
  * Used by all services that need pagination to eliminate boilerplate code.
  */
-@ApplicationScoped
+@Singleton
 class PaginationHelper {
     /**
      * Paginates data from List and count into a Page.

@@ -1,0 +1,52 @@
+<!--
+  Detailed Card Back Template
+
+  This template shows the back side of a flashcard.
+  Displays: full description, metadata, and related knowledge items
+-->
+<div class="card-back">
+  <div class="card-header">
+    <h3>{name.upper}</h3>
+    <code class="card-code">{code}</code>
+  </div>
+
+  <section class="card-main">
+    <h4>Description</h4>
+    <div class="description-box">
+      {str:orDefault(description, 'No detailed description available')}
+    </div>
+  </section>
+
+  {#if metadata.level}
+    <section class="card-metadata">
+      <h4>Metadata</h4>
+      <dl class="metadata-list">
+        <dt>Level:</dt>
+        <dd>{metadata.level}</dd>
+      </dl>
+    </section>
+  {/if}
+
+  {#if relatedKnowledge.isNotEmpty}
+    <section class="card-related">
+      <h4>Related Knowledge ({relatedKnowledge.size} {cond:ifElse(relatedKnowledge.size == 1, 'item', 'items')})</h4>
+      <div class="related-grid">
+        {#for item in relatedKnowledge}
+          <div class="related-card">
+            <h5>{item.name}</h5>
+            <p class="related-code">{item.code}</p>
+            {#if item.description.isNotBlank}
+              <p class="related-description">{item.description.truncate(100)}</p>
+            {/if}
+            {#if item.metadata.level}
+              <span class="badge badge-sm">Level: {item.metadata.level}</span>
+            {/if}
+          </div>
+        {/for}
+      </div>
+    {#else}
+      <section class="card-related">
+        <p class="no-related">No related knowledge items</p>
+      </section>
+  {/if}
+</div>

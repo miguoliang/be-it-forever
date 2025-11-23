@@ -1,0 +1,112 @@
+<!--
+  Advanced Card Template
+
+  Demonstrates advanced Qute features:
+  - String extensions (truncate, capitalize, upper, isNotBlank)
+  - List extensions (isNotEmpty, size, firstOrNull)
+  - Global functions (str:orDefault, math:percent, cond:ifElse)
+  - Conditionals and loops
+  - Nested property access
+-->
+<div class="card-advanced">
+  <header class="card-header">
+    <div class="title-section">
+      <h1>{name.capitalize}</h1>
+      <p class="subtitle">{code.upper}</p>
+    </div>
+  </header>
+
+  <main class="card-body">
+    <!-- Description Section -->
+    <section class="description-section">
+      <h2>Overview</h2>
+      <div class="description-content">
+        {#if description.isNotBlank}
+          {description}
+        {#else}
+          <em class="text-muted">No description provided</em>
+        {/if}
+      </div>
+    </section>
+
+    <!-- Metadata Section -->
+    {#if metadata.level}
+      <section class="metadata-section">
+        <h2>Details</h2>
+        <table class="metadata-table">
+          <tr>
+            <th>Difficulty Level</th>
+            <td>
+              <span class="badge badge-{metadata.level.lower}">
+                {metadata.level.upper}
+              </span>
+            </td>
+          </tr>
+        </table>
+      </section>
+    {/if}
+
+    <!-- Related Knowledge Section -->
+    <section class="related-section">
+      <h2>
+        Related Concepts
+        {#if relatedKnowledge.isNotEmpty}
+          <span class="count-badge">{relatedKnowledge.size}</span>
+        {/if}
+      </h2>
+
+      {#if relatedKnowledge.isNotEmpty}
+        <!-- Show first item as featured -->
+        {#if relatedKnowledge.firstOrNull}
+          <div class="featured-item">
+            <h3>Featured: {relatedKnowledge.firstOrNull.name}</h3>
+            <p>{relatedKnowledge.firstOrNull.description.truncate(150)}</p>
+          </div>
+        {/if}
+
+        <!-- Show all items in grid -->
+        <div class="related-grid">
+          {#for item in relatedKnowledge}
+            <div class="related-item">
+              <div class="item-header">
+                <h4>{item.name.capitalize}</h4>
+                <code>{item.code}</code>
+              </div>
+
+              <div class="item-body">
+                <p>{str:orDefault(item.description.truncate(80), 'No description')}</p>
+              </div>
+
+              {#if item.metadata.level}
+                <div class="item-footer">
+                  <span class="level-indicator">
+                    Level: {item.metadata.level}
+                  </span>
+                </div>
+              {/if}
+            </div>
+          {/for}
+        </div>
+
+        <!-- Summary statistics -->
+        <div class="related-stats">
+          <p class="text-sm text-muted">
+            Showing {relatedKnowledge.size}
+            {cond:ifElse(relatedKnowledge.size == 1, 'related item', 'related items')}
+          </p>
+        </div>
+      {#else}
+        <div class="no-related">
+          <p class="text-muted">No related knowledge items found</p>
+          <p class="text-sm">This concept stands alone.</p>
+        </div>
+      {/if}
+    </section>
+  </main>
+
+  <footer class="card-footer">
+    <div class="footer-content">
+      <small class="text-muted">Knowledge Code: {code}</small>
+    </div>
+  </footer>
+</div>

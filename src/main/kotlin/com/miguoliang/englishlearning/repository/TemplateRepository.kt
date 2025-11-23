@@ -9,5 +9,18 @@ import jakarta.enterprise.context.ApplicationScoped
 class TemplateRepository : PanacheRepositoryBase<Template, String> {
     suspend fun findByCode(code: String): Template? = findById(code).awaitSuspending()
 
-    suspend fun streamAll(): List<Template> = listAll().awaitSuspending()
+    /**
+     * Load all templates (use with caution - only for small datasets).
+     * For production use with large datasets, add pagination support.
+     */
+    suspend fun streamAll(): List<Template> {
+        val count = count().awaitSuspending()
+        // Safety check: warn if loading too many records
+        if (count > 1000) {
+            throw IllegalStateException(
+                "Attempting to load $count templates without pagination. Consider adding pagination support.",
+            )
+        }
+        return listAll().awaitSuspending()
+    }
 }

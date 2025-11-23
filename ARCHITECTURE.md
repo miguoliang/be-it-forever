@@ -164,7 +164,7 @@ A Quarkus reactive backend application for English knowledge learning with space
 - **Database**: PostgreSQL with Hibernate Reactive Panache (reactive database access)
 - **Migration**: Flyway
 - **Workflow Engine**: Temporal (for heavy, multi-step workflows)
-- **Template Engine**: FreeMarker (for card content rendering)
+- **Template Engine**: Qute (Quarkus reactive template engine for card content rendering)
 - **Language**: Kotlin 2.3.0-RC
 - **Java**: Java 25
 - **Build**: Gradle with Kotlin DSL
@@ -467,8 +467,8 @@ erDiagram
         code code PK "Immutable code (ST-0000001)"
         short_string name UK "Unique template name"
         long_string description "Template description"
-        short_string format "Template format (e.g., ftl for FreeMarker)"
-        blob content "Template content in FreeMarker syntax"
+        short_string format "Template format (qute for Qute templates)"
+        blob content "Template content in Qute syntax"
     }
     
     card_types {
@@ -1342,12 +1342,12 @@ Manages template operations.
 - `getAllTemplates()`: List all templates (usage determined by relationships)
 
 #### 3. **CardTemplateService**
-Renders card templates with knowledge data using FreeMarker template engine.
-- `renderByRole(cardType, knowledge, role)`: Generates content using FreeMarker template for specified role
+Renders card templates with knowledge data using Qute reactive template engine.
+- `renderByRole(cardType, knowledge, role)`: Generates content using Qute template for specified role (fully reactive)
 - Loads templates from database via TemplateService and card_type_template_rel
-- Uses FreeMarker Template Language (FTL) syntax: `${name}`, `${description}`, `${metadata.level}`, `<#list relatedKnowledge as item>...${item.name}...</#list>` (iterates over referenced knowledge entities via knowledge_rel)
-- Metadata can be accessed via dot notation (e.g., `${metadata.key}` or `${metadata.nested.key}`)
-- Template format field value is `ftl` for FreeMarker templates
+- Uses Qute syntax: `{name}`, `{description}`, `{metadata.level}`, `{#for item in relatedKnowledge}{item.name}{/for}` (iterates over referenced knowledge entities via knowledge_rel)
+- Metadata can be accessed via dot notation (e.g., `{metadata.level}` or `{metadata.nested.key}`)
+- Template format field value is `qute` for Qute templates
 
 #### 4. **KnowledgeService**
 Manages knowledge operations.
@@ -1421,7 +1421,7 @@ Calculates account statistics.
    - Related knowledge items via knowledge_rel junction table
    - Card type and its associated templates via card_type_template_rel (with roles)
    - Templates for each role (e.g., "front", "back", or custom roles)
-5. Service renders content using FreeMarker templates by role (which may include `${name}`, `${description}`, and `<#list relatedKnowledge>...</#list>`)
+5. Service renders content using Qute templates by role (which may include `{name}`, `{description}`, and `{#for item in relatedKnowledge}...{/for}`)
 6. Service returns paginated list with rendered `front` and `back` content
 7. Client displays card front to user
 8. User reviews and submits quality: `POST /api/v1/accounts/me/cards/{cardId}:review`
@@ -1664,7 +1664,7 @@ Data Transfer Objects for API responses:
 ### MVP Constraints
 - No authentication/authorization
 - No caching
-- FreeMarker template engine for card content rendering (format: `ftl`)
+- Qute reactive template engine for card content rendering (format: `qute`)
 
 ### Technical Decisions
 
@@ -1723,8 +1723,8 @@ Data Transfer Objects for API responses:
 #### Other Technical Decisions
 - All operations are reactive (Mutiny Uni/Multi with Kotlin coroutines) for non-blocking I/O
 - SM-2 algorithm implemented as pure function object
-- Card templates use FreeMarker Template Language (FTL) with `${variable}` syntax
-- Template format field value is `ftl` for FreeMarker templates
+- Card templates use Qute syntax with `{variable}` expressions
+- Template format field value is `qute` for Qute templates
 - Database uses snake_case, Kotlin uses camelCase (handled by @Column)
 - Using Kotlin coroutines with `suspend` functions for cleaner reactive code
 

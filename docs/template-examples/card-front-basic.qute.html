@@ -1,0 +1,26 @@
+<!--
+  Basic Card Front Template
+
+  This template shows the front side of a flashcard.
+  Displays: name, truncated description, and level badge
+-->
+<div class="card-front">
+  <div class="card-header">
+    <h2 class="card-title">{name.capitalize}</h2>
+    <span class="card-code">{code}</span>
+  </div>
+
+  <div class="card-content">
+    {#if description.isNotBlank}
+      <p class="card-description">{description.truncate(120)}</p>
+    {#else}
+      <p class="card-placeholder">No description available</p>
+    {/if}
+  </div>
+
+  {#if metadata.level}
+    <div class="card-footer">
+      <span class="badge badge-level">Level: {metadata.level}</span>
+    </div>
+  {/if}
+</div>

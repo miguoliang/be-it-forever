@@ -1,7 +1,7 @@
 package com.miguoliang.englishlearning.service
 
 import com.miguoliang.englishlearning.model.AccountCard
-import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Singleton
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
@@ -14,7 +14,7 @@ import java.time.LocalDateTime
  * - Ease factor adjustment: Based on quality rating (0-5 scale)
  * - Minimum ease factor: 1.3
  */
-@ApplicationScoped
+@Singleton
 class Sm2Algorithm {
     companion object {
         private const val MIN_EASE_FACTOR = 1.3

@@ -2,12 +2,12 @@ package com.miguoliang.englishlearning.service
 
 import com.miguoliang.englishlearning.model.Template
 import com.miguoliang.englishlearning.repository.TemplateRepository
-import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Singleton
 
 /**
  * Manages template operations.
  */
-@ApplicationScoped
+@Singleton
 class TemplateService(
     private val templateRepository: TemplateRepository,
 ) {

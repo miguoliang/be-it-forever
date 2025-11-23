@@ -344,4 +344,99 @@ class AccountCardRepository : PanacheRepositoryBase<AccountCard, Long> {
             cardTypeCode to count
         }
     }
+
+    /**
+     * Optimized query for listing account cards with minimal data transfer.
+     * Uses HQL with constructor expression for type-safe projections.
+     *
+     * Benefits of HQL over native SQL:
+     * - Database-agnostic (works with any JPA-supported database)
+     * - Type-safe (compile-time checking)
+     * - Uses entity relationships (no manual JOIN syntax)
+     *
+     * Performance improvement over findWithFilters:
+     * - Old: 3 queries (AccountCard + Knowledge batch + CardType batch)
+     * - New: 1 query with JOINs, fetching only needed columns
+     *
+     * @param accountId Account ID
+     * @param pageable Pagination parameters
+     * @param cardTypeCode Optional card type filter
+     * @param statusFilter Optional status filter
+     * @param now Current time for due date calculations
+     * @return List of projections containing only needed fields
+     */
+    suspend fun findProjectionsWithFilters(
+        accountId: Long,
+        pageable: Pageable,
+        cardTypeCode: String? = null,
+        statusFilter: StatusFilter? = null,
+        now: LocalDateTime? = null,
+    ): List<com.miguoliang.englishlearning.dto.AccountCardListProjection> {
+        // Build HQL query with constructor expression for projections
+        val hql =
+            buildString {
+                append(
+                    """
+                    SELECT new com.miguoliang.englishlearning.dto.AccountCardListProjection(
+                        ac.id,
+                        ac.easeFactor,
+                        ac.intervalDays,
+                        ac.repetitions,
+                        ac.nextReviewDate,
+                        ac.lastReviewedAt,
+                        ac.knowledgeCode,
+                        k.name,
+                        k.description,
+                        k.metadata.level,
+                        ac.cardTypeCode,
+                        ct.name,
+                        ct.description
+                    )
+                    FROM AccountCard ac
+                    JOIN Knowledge k ON ac.knowledgeCode = k.code
+                    JOIN CardType ct ON ac.cardTypeCode = ct.code
+                    WHERE ac.accountId = :accountId
+                    """.trimIndent(),
+                )
+
+                // Apply filters
+                if (cardTypeCode != null) {
+                    append(" AND ac.cardTypeCode = :cardTypeCode")
+                }
+
+                when (statusFilter) {
+                    StatusFilter.NEW -> append(" AND ac.repetitions = 0")
+                    StatusFilter.LEARNING -> append(" AND ac.repetitions > 0 AND ac.repetitions < 4")
+                    StatusFilter.REVIEW -> append(" AND ac.repetitions >= 4")
+                    StatusFilter.DUE -> {
+                        require(now != null) { "now parameter required for DUE status filter" }
+                        append(" AND ac.nextReviewDate <= :now")
+                    }
+                    null -> {}
+                }
+            }
+
+        val session = sessionFactory.openSession().awaitSuspending()
+        try {
+            val query =
+                session
+                    .createQuery<com.miguoliang.englishlearning.dto.AccountCardListProjection>(
+                        hql,
+                        com.miguoliang.englishlearning.dto.AccountCardListProjection::class.java,
+                    ).setParameter("accountId", accountId)
+                    .setFirstResult(pageable.page * pageable.size)
+                    .setMaxResults(pageable.size)
+
+            if (cardTypeCode != null) {
+                query.setParameter("cardTypeCode", cardTypeCode)
+            }
+            if (statusFilter == StatusFilter.DUE && now != null) {
+                query.setParameter("now", now)
+            }
+
+            return query.resultList.awaitSuspending()
+        } finally {
+            session.close().awaitSuspending()
+        }
+    }
 }
