@@ -548,106 +548,7 @@ erDiagram
 - Translation_keys table has unique constraint on key
 - Translation_messages table has unique constraint on (translation_key_code, locale_code)
 
-### Entity Relationship Design Pattern
-
-**Design Decision: Unidirectional Foreign Keys Without JPA Relationship Annotations**
-
-This codebase intentionally uses **simple foreign key fields** instead of JPA relationship annotations (`@OneToMany`, `@ManyToOne`, etc.). While the ER diagrams show logical relationships between entities, these relationships are implemented through:
-
-1. **Database foreign key constraints** - Enforced at the database level
-2. **Explicit repository queries** - Managed in code via repository methods
-3. **Simple scalar fields** - Foreign keys are just `Long` or `String` fields
-
-**Example:**
-```kotlin
-class AccountCard(
-    val accountId: Long,           // Simple field, not @ManyToOne
-    val knowledgeCode: String,     // Simple field, not @ManyToOne
-    val cardTypeCode: String,      // Simple field, not @ManyToOne
-    ...
-)
-```
-
-**Rationale:**
-
-This approach is chosen for the following reasons:
-
-1. **Reactive Framework Compatibility**
-   - Quarkus Reactive Panache has limited support for lazy loading
-   - Avoids `LazyInitializationException` in reactive contexts
-   - No need for session/transaction management for lazy loading
-
-2. **Simpler Entity Design**
-   - Entities are plain Kotlin classes without JPA proxy objects
-   - No bidirectional relationship synchronization required
-   - Easier to test, serialize, and reason about
-   - Compatible with data transfer objects (DTOs)
-
-3. **Explicit Relationship Loading**
-   - Developers explicitly query for related entities when needed
-   - Better control over what data is loaded and when
-   - No hidden N+1 query problems from accidental lazy loading
-   - Batch loading via `findByCodeIn()` methods prevents N+1 queries
-
-4. **Performance Optimization**
-   - Manual join queries in repositories allow for optimization
-   - Batch loading is explicitly implemented where needed
-   - No automatic eager loading of unnecessary data
-   - Index-based queries on foreign key columns
-
-5. **Serialization Simplicity**
-   - No circular reference issues when converting to JSON
-   - No need for `@JsonIgnore` or complex DTO mappings
-   - Clean API responses without entity graph concerns
-
-6. **Microservice Boundaries**
-   - Clear separation between entities
-   - Easier to extract entities to separate services if needed
-   - No tight coupling through bidirectional relationships
-
-**Implementation Pattern:**
-
-Relationships are managed through explicit repository methods:
-
-```kotlin
-// Load related entities explicitly
-val account = accountRepository.findById(accountId)
-val cards = accountCardRepository.findByAccountId(accountId)
-
-// Batch load to avoid N+1 queries
-val knowledgeCodes = cards.map { it.knowledgeCode }.distinct()
-val knowledgeMap = knowledgeRepository.findByCodeIn(knowledgeCodes)
-    .associateBy { it.code }
-```
-
-**When This Pattern Works Best:**
-
-✅ Reactive/async applications (like Quarkus Reactive)
-✅ REST APIs with clear request/response boundaries
-✅ Microservices architecture
-✅ Applications prioritizing explicit data loading
-
-**When NOT to Use This Pattern:**
-
-❌ Traditional blocking JPA applications with complex object graphs
-❌ Applications heavily relying on cascade operations
-❌ Use cases requiring automatic bidirectional navigation
-
-**Database Integrity:**
-
-Foreign key constraints are still enforced at the database level through DDL:
-
-```sql
-ALTER TABLE account_cards
-    ADD CONSTRAINT fk_account_cards_account
-    FOREIGN KEY (account_id) REFERENCES accounts(id);
-
-ALTER TABLE account_cards
-    ADD CONSTRAINT fk_account_cards_knowledge
-    FOREIGN KEY (knowledge_code) REFERENCES knowledge(code);
-```
-
-This ensures referential integrity while keeping entities simple and performant.
+> **Note**: Entity relationship patterns and JPA entity design decisions are documented in the [Design Decisions & Constraints](#step-7-design-decisions--constraints) section.
 
 ### Metadata Query Examples
 
@@ -1766,6 +1667,60 @@ Data Transfer Objects for API responses:
 - FreeMarker template engine for card content rendering (format: `ftl`)
 
 ### Technical Decisions
+
+#### Entity Relationship Pattern
+- **Design Decision**: Use unidirectional foreign keys WITHOUT JPA relationship annotations (`@OneToMany`, `@ManyToOne`, etc.)
+- **Implementation**: Foreign keys are simple `Long` or `String` fields, not JPA relationship objects
+- **Rationale**:
+  1. **Reactive Compatibility**: Quarkus Reactive Panache has limited lazy loading support; avoids `LazyInitializationException`
+  2. **Explicit Control**: Developers explicitly query for related entities, preventing hidden N+1 queries
+  3. **Simpler Entities**: Plain Kotlin classes without JPA proxy objects or bidirectional synchronization
+  4. **Performance**: Batch loading via `findByCodeIn()` methods, manual join optimization
+  5. **Serialization**: No circular references, no need for `@JsonIgnore` or complex DTOs
+  6. **Microservice-Ready**: Clear entity boundaries, easier to extract to separate services
+- **Example**:
+  ```kotlin
+  class AccountCard(
+      val accountId: Long,        // Simple field, not @ManyToOne
+      val knowledgeCode: String,  // Simple field, not @ManyToOne
+      ...
+  )
+  ```
+- **Relationship Loading Pattern**:
+  ```kotlin
+  // Explicit loading
+  val cards = accountCardRepository.findByAccountId(accountId)
+
+  // Batch loading to prevent N+1
+  val codes = cards.map { it.knowledgeCode }.distinct()
+  val knowledgeMap = knowledgeRepository.findByCodeIn(codes).associateBy { it.code }
+  ```
+- **Database Integrity**: Foreign key constraints enforced at database level via DDL
+- **Use When**: Reactive apps, REST APIs, microservices, explicit data loading preferred
+- **Avoid When**: Traditional blocking JPA, heavy cascade operations, automatic bidirectional navigation needed
+
+#### JPA Entity Design
+- **Design Decision**: Use regular classes instead of data classes for JPA entities
+- **Implementation**: All entities extend from regular `class`, not `data class`
+- **Rationale**:
+  1. **Stable Identity**: `equals()` and `hashCode()` based on business keys (primary key or natural key), not all fields
+  2. **Mutable State**: Entity fields can change (e.g., `updatedAt`), but equality should remain stable
+  3. **No Copy Method**: Data class `copy()` doesn't apply to JPA entities (entities are mutable, not immutable)
+  4. **Collections Safety**: Entities in collections won't break when state changes
+- **Example**:
+  ```kotlin
+  class Knowledge(...) {
+      override fun equals(other: Any?): Boolean = other is Knowledge && code == other.code
+      override fun hashCode(): Int = code.hashCode()
+  }
+  ```
+- **Business Key Patterns**:
+  - Entities with natural String keys (code): Compare by `code`
+  - Entities with unique business keys: Compare by unique field (e.g., `username`)
+  - Entities with composite keys: Compare by combination of fields
+  - Entities with generated IDs: Compare by natural/composite business key, not ID
+
+#### Other Technical Decisions
 - All operations are reactive (Mutiny Uni/Multi with Kotlin coroutines) for non-blocking I/O
 - SM-2 algorithm implemented as pure function object
 - Card templates use FreeMarker Template Language (FTL) with `${variable}` syntax
