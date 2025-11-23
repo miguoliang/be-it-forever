@@ -14,7 +14,7 @@ import java.time.Instant
         UniqueConstraint(columnNames = ["username"], name = "uk_account_username"),
     ],
 )
-data class Account(
+class Account(
     @Id
     @Column(name = "id")
     val id: Long? = null,
@@ -28,4 +28,8 @@ data class Account(
     val createdBy: String?,
     @Column(name = "updated_by")
     val updatedBy: String?,
-)
+) {
+    override fun equals(other: Any?): Boolean = other is Account && username == other.username
+
+    override fun hashCode(): Int = username.hashCode()
+}

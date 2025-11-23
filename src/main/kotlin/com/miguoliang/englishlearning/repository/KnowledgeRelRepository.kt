@@ -1,22 +1,18 @@
 package com.miguoliang.englishlearning.repository
 
 import com.miguoliang.englishlearning.model.KnowledgeRel
-import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase
+import io.quarkus.hibernate.reactive.panache.PanacheRepository
 import io.quarkus.panache.common.Parameters
 import io.smallrye.mutiny.coroutines.awaitSuspending
 import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
-class KnowledgeRelRepository : PanacheRepositoryBase<KnowledgeRel, Long> {
+class KnowledgeRelRepository : PanacheRepository<KnowledgeRel> {
     suspend fun findBySourceKnowledgeCode(sourceKnowledgeCode: String): List<KnowledgeRel> =
-        find("sourceKnowledgeCode = :code", Parameters.with("code", sourceKnowledgeCode))
-            .list<KnowledgeRel>()
-            .awaitSuspending()
+        find("sourceKnowledgeCode", sourceKnowledgeCode).list<KnowledgeRel>().awaitSuspending()
 
     suspend fun findByTargetKnowledgeCode(targetKnowledgeCode: String): List<KnowledgeRel> =
-        find("targetKnowledgeCode = :code", Parameters.with("code", targetKnowledgeCode))
-            .list<KnowledgeRel>()
-            .awaitSuspending()
+        find("targetKnowledgeCode", targetKnowledgeCode).list<KnowledgeRel>().awaitSuspending()
 
     suspend fun findBySourceKnowledgeCodeAndTargetKnowledgeCode(
         sourceKnowledgeCode: String,

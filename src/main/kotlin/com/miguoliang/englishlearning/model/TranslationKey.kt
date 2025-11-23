@@ -8,7 +8,7 @@ import java.time.Instant
 
 @Entity
 @Table(name = "translation_keys")
-data class TranslationKey(
+class TranslationKey(
     @Id
     @Column(name = "code")
     val code: String,
@@ -22,4 +22,8 @@ data class TranslationKey(
     val createdBy: String?,
     @Column(name = "updated_by")
     val updatedBy: String?,
-)
+) {
+    override fun equals(other: Any?): Boolean = other is TranslationKey && code == other.code
+
+    override fun hashCode(): Int = code.hashCode()
+}

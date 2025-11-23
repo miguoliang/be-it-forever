@@ -51,13 +51,22 @@ class Sm2Algorithm {
         }
 
         val nextReviewDate = LocalDateTime.now().plusDays(newIntervalDays.toLong())
+        val now = LocalDateTime.now()
 
-        return currentCard.copy(
+        return AccountCard(
+            id = currentCard.id,
+            accountId = currentCard.accountId,
+            knowledgeCode = currentCard.knowledgeCode,
+            cardTypeCode = currentCard.cardTypeCode,
             easeFactor = newEaseFactor,
-            repetitions = newRepetitions,
             intervalDays = newIntervalDays,
+            repetitions = newRepetitions,
             nextReviewDate = nextReviewDate,
-            lastReviewedAt = LocalDateTime.now(),
+            lastReviewedAt = now,
+            createdAt = currentCard.createdAt,
+            updatedAt = currentCard.updatedAt,
+            createdBy = currentCard.createdBy,
+            updatedBy = currentCard.updatedBy,
         )
     }
 

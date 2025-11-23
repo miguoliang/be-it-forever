@@ -8,17 +8,16 @@ import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class CardTypeRepository : PanacheRepositoryBase<CardType, String> {
-    suspend fun streamAll(): List<CardType> = findAll().list<CardType>().awaitSuspending()
-
     suspend fun findByCode(code: String): CardType? = findById(code).awaitSuspending()
 
-    suspend fun findByName(name: String): CardType? =
-        find("name = :name", Parameters.with("name", name))
-            .firstResult<CardType>()
-            .awaitSuspending()
+    suspend fun streamAll(): List<CardType> = listAll().awaitSuspending()
 
     suspend fun findByCodeIn(codes: Collection<String>): List<CardType> =
-        find("code in :codes", Parameters.with("codes", codes))
-            .list<CardType>()
-            .awaitSuspending()
+        if (codes.isEmpty()) {
+            emptyList()
+        } else {
+            find("code in :codes", Parameters.with("codes", codes))
+                .list<CardType>()
+                .awaitSuspending()
+        }
 }

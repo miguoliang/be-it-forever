@@ -8,16 +8,6 @@ import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class CardTypeTemplateRelRepository : PanacheRepositoryBase<CardTypeTemplateRel, Long> {
-    suspend fun findByCardTypeCode(cardTypeCode: String): List<CardTypeTemplateRel> =
-        find("cardTypeCode = :code", Parameters.with("code", cardTypeCode))
-            .list<CardTypeTemplateRel>()
-            .awaitSuspending()
-
-    suspend fun findByTemplateCode(templateCode: String): List<CardTypeTemplateRel> =
-        find("templateCode = :code", Parameters.with("code", templateCode))
-            .list<CardTypeTemplateRel>()
-            .awaitSuspending()
-
     suspend fun findByCardTypeCodeAndRole(
         cardTypeCode: String,
         role: String,

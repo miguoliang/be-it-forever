@@ -15,7 +15,7 @@ import java.time.Instant
         Index(columnList = "target_knowledge_code", name = "idx_knowledge_rel_target"),
     ],
 )
-data class KnowledgeRel(
+class KnowledgeRel(
     @Id
     @Column(name = "id")
     val id: Long? = null,
@@ -31,4 +31,16 @@ data class KnowledgeRel(
     val createdBy: String?,
     @Column(name = "updated_by")
     val updatedBy: String?,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (other !is KnowledgeRel) return false
+        return sourceKnowledgeCode == other.sourceKnowledgeCode &&
+            targetKnowledgeCode == other.targetKnowledgeCode
+    }
+
+    override fun hashCode(): Int {
+        var result = sourceKnowledgeCode.hashCode()
+        result = 31 * result + targetKnowledgeCode.hashCode()
+        return result
+    }
+}

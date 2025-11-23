@@ -10,7 +10,7 @@ import java.time.Instant
 
 @Entity
 @Table(name = "knowledge")
-data class Knowledge(
+class Knowledge(
     @Id
     @Column(name = "code")
     val code: String,
@@ -20,7 +20,7 @@ data class Knowledge(
     val description: String?,
     @Type(JsonBinaryType::class)
     @Column(name = "metadata", columnDefinition = "jsonb")
-    val metadata: Metadata?, // JSONB converted to Metadata data class
+    val metadata: Metadata?,
     @Column(name = "created_at")
     val createdAt: Instant,
     @Column(name = "updated_at")
@@ -29,4 +29,8 @@ data class Knowledge(
     val createdBy: String?,
     @Column(name = "updated_by")
     val updatedBy: String?,
-)
+) {
+    override fun equals(other: Any?): Boolean = other is Knowledge && code == other.code
+
+    override fun hashCode(): Int = code.hashCode()
+}

@@ -8,7 +8,7 @@ import java.time.Instant
 
 @Entity
 @Table(name = "templates")
-data class Template(
+class Template(
     @Id
     @Column(name = "code")
     val code: String,
@@ -29,35 +29,7 @@ data class Template(
     @Column(name = "updated_by")
     val updatedBy: String?,
 ) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+    override fun equals(other: Any?): Boolean = other is Template && code == other.code
 
-        other as Template
-
-        if (code != other.code) return false
-        if (name != other.name) return false
-        if (description != other.description) return false
-        if (format != other.format) return false
-        if (!content.contentEquals(other.content)) return false
-        if (createdAt != other.createdAt) return false
-        if (updatedAt != other.updatedAt) return false
-        if (createdBy != other.createdBy) return false
-        if (updatedBy != other.updatedBy) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = code.hashCode()
-        result = 31 * result + name.hashCode()
-        result = 31 * result + (description?.hashCode() ?: 0)
-        result = 31 * result + (format?.hashCode() ?: 0)
-        result = 31 * result + content.contentHashCode()
-        result = 31 * result + createdAt.hashCode()
-        result = 31 * result + updatedAt.hashCode()
-        result = 31 * result + (createdBy?.hashCode() ?: 0)
-        result = 31 * result + (updatedBy?.hashCode() ?: 0)
-        return result
-    }
+    override fun hashCode(): Int = code.hashCode()
 }

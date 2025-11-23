@@ -8,7 +8,7 @@ import java.time.Instant
 
 @Entity
 @Table(name = "card_type_template_rel")
-data class CardTypeTemplateRel(
+class CardTypeTemplateRel(
     @Id
     @Column(name = "id")
     val id: Long? = null,
@@ -26,4 +26,18 @@ data class CardTypeTemplateRel(
     val createdBy: String?,
     @Column(name = "updated_by")
     val updatedBy: String?,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (other !is CardTypeTemplateRel) return false
+        return cardTypeCode == other.cardTypeCode &&
+            templateCode == other.templateCode &&
+            role == other.role
+    }
+
+    override fun hashCode(): Int {
+        var result = cardTypeCode.hashCode()
+        result = 31 * result + templateCode.hashCode()
+        result = 31 * result + role.hashCode()
+        return result
+    }
+}

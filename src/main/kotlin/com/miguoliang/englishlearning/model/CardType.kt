@@ -8,7 +8,7 @@ import java.time.Instant
 
 @Entity
 @Table(name = "card_types")
-data class CardType(
+class CardType(
     @Id
     @Column(name = "code")
     val code: String,
@@ -24,4 +24,8 @@ data class CardType(
     val createdBy: String?,
     @Column(name = "updated_by")
     val updatedBy: String?,
-)
+) {
+    override fun equals(other: Any?): Boolean = other is CardType && code == other.code
+
+    override fun hashCode(): Int = code.hashCode()
+}

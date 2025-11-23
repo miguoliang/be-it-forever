@@ -20,7 +20,7 @@ import java.time.LocalDateTime
         Index(columnList = "card_type_code", name = "idx_account_cards_card_type"),
     ],
 )
-data class AccountCard(
+class AccountCard(
     @Id
     @Column(name = "id")
     val id: Long? = null,
@@ -48,4 +48,18 @@ data class AccountCard(
     val createdBy: String?,
     @Column(name = "updated_by")
     val updatedBy: String?,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (other !is AccountCard) return false
+        return accountId == other.accountId &&
+            knowledgeCode == other.knowledgeCode &&
+            cardTypeCode == other.cardTypeCode
+    }
+
+    override fun hashCode(): Int {
+        var result = accountId.hashCode()
+        result = 31 * result + knowledgeCode.hashCode()
+        result = 31 * result + cardTypeCode.hashCode()
+        return result
+    }
+}

@@ -14,7 +14,7 @@ import java.time.LocalDateTime
         Index(columnList = "account_card_id", name = "idx_review_history_account_card"),
     ],
 )
-data class ReviewHistory(
+class ReviewHistory(
     @Id
     @Column(name = "id")
     val id: Long? = null,
@@ -23,7 +23,19 @@ data class ReviewHistory(
     @Column(name = "quality")
     val quality: Int,
     @Column(name = "reviewed_at")
-    val reviewedAt: LocalDateTime, // Changed to LocalDateTime to match local_time semantic type
+    val reviewedAt: LocalDateTime,
     @Column(name = "created_by")
     val createdBy: String?,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (other !is ReviewHistory) return false
+        return accountCardId == other.accountCardId &&
+            reviewedAt == other.reviewedAt
+    }
+
+    override fun hashCode(): Int {
+        var result = accountCardId.hashCode()
+        result = 31 * result + reviewedAt.hashCode()
+        return result
+    }
+}

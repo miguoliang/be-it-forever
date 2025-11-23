@@ -96,10 +96,23 @@ class AccountCardService(
         }
 
         // Apply SM-2 algorithm
+        val reviewedCard = sm2Algorithm.calculateNextReview(card, quality)
         val updatedCard =
-            sm2Algorithm
-                .calculateNextReview(card, quality)
-                .copy(updatedAt = java.time.Instant.now())
+            AccountCard(
+                id = reviewedCard.id,
+                accountId = reviewedCard.accountId,
+                knowledgeCode = reviewedCard.knowledgeCode,
+                cardTypeCode = reviewedCard.cardTypeCode,
+                easeFactor = reviewedCard.easeFactor,
+                intervalDays = reviewedCard.intervalDays,
+                repetitions = reviewedCard.repetitions,
+                nextReviewDate = reviewedCard.nextReviewDate,
+                lastReviewedAt = reviewedCard.lastReviewedAt,
+                createdAt = reviewedCard.createdAt,
+                updatedAt = java.time.Instant.now(),
+                createdBy = reviewedCard.createdBy,
+                updatedBy = reviewedCard.updatedBy,
+            )
 
         // Save updated card
         accountCardRepository.persistAndFlush(updatedCard).awaitSuspending()

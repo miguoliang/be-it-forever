@@ -17,7 +17,7 @@ import java.time.Instant
         ),
     ],
 )
-data class TranslationMessage(
+class TranslationMessage(
     @Id
     @Column(name = "code")
     val code: String,
@@ -35,4 +35,8 @@ data class TranslationMessage(
     val createdBy: String?,
     @Column(name = "updated_by")
     val updatedBy: String?,
-)
+) {
+    override fun equals(other: Any?): Boolean = other is TranslationMessage && code == other.code
+
+    override fun hashCode(): Int = code.hashCode()
+}
