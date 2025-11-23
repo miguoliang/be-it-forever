@@ -38,3 +38,11 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### Rust ###
+/target/
+**/*.rs.bk
+Cargo.lock
+
+### Environment ###
+.env
