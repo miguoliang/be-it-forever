@@ -8,26 +8,22 @@ import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class KnowledgeRelRepository : PanacheRepositoryBase<KnowledgeRel, Long> {
-
-    suspend fun findBySourceKnowledgeCode(sourceKnowledgeCode: String): List<KnowledgeRel> {
-        return find("sourceKnowledgeCode = :code", Parameters.with("code", sourceKnowledgeCode))
+    suspend fun findBySourceKnowledgeCode(sourceKnowledgeCode: String): List<KnowledgeRel> =
+        find("sourceKnowledgeCode = :code", Parameters.with("code", sourceKnowledgeCode))
             .list<KnowledgeRel>()
             .awaitSuspending()
-    }
 
-    suspend fun findByTargetKnowledgeCode(targetKnowledgeCode: String): List<KnowledgeRel> {
-        return find("targetKnowledgeCode = :code", Parameters.with("code", targetKnowledgeCode))
+    suspend fun findByTargetKnowledgeCode(targetKnowledgeCode: String): List<KnowledgeRel> =
+        find("targetKnowledgeCode = :code", Parameters.with("code", targetKnowledgeCode))
             .list<KnowledgeRel>()
             .awaitSuspending()
-    }
 
     suspend fun findBySourceKnowledgeCodeAndTargetKnowledgeCode(
         sourceKnowledgeCode: String,
         targetKnowledgeCode: String,
-    ): KnowledgeRel? {
-        return find(
+    ): KnowledgeRel? =
+        find(
             "sourceKnowledgeCode = :source and targetKnowledgeCode = :target",
             Parameters.with("source", sourceKnowledgeCode).and("target", targetKnowledgeCode),
         ).firstResult<KnowledgeRel>().awaitSuspending()
-    }
 }

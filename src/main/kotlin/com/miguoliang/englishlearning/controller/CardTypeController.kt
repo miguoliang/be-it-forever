@@ -1,7 +1,5 @@
 package com.miguoliang.englishlearning.controller
 
-import com.miguoliang.englishlearning.dto.CardTypeDto
-import com.miguoliang.englishlearning.dto.ErrorResponseFactory
 import com.miguoliang.englishlearning.dto.PageDto
 import com.miguoliang.englishlearning.dto.PageInfoDto
 import com.miguoliang.englishlearning.dto.toDto
@@ -29,20 +27,20 @@ class CardTypeController(
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int,
     ): Response {
-        return try {
-            val cardTypes = cardTypeService.getAllCardTypes()
+        val cardTypes = cardTypeService.getAllCardTypes()
 
-            val total = cardTypes.size.toLong()
-            val start = page * size
-            val end = minOf(start + size, cardTypes.size)
-            val pagedContent =
-                if (start < cardTypes.size) {
-                    cardTypes.subList(start, end)
-                } else {
-                    emptyList()
-                }
+        val total = cardTypes.size.toLong()
+        val start = page * size
+        val end = minOf(start + size, cardTypes.size)
+        val pagedContent =
+            if (start < cardTypes.size) {
+                cardTypes.subList(start, end)
+            } else {
+                emptyList()
+            }
 
-            val pageDto =
+        return Response
+            .ok(
                 PageDto(
                     content = pagedContent.map { it.toDto() },
                     page =
@@ -52,13 +50,8 @@ class CardTypeController(
                             totalElements = total,
                             totalPages = if (total > 0) ((total - 1) / size + 1).toInt() else 0,
                         ),
-                )
-            Response.ok(pageDto).build()
-        } catch (error: Exception) {
-            Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(PageDto<CardTypeDto>(emptyList(), PageInfoDto(0, 0, 0, 0)))
-                .build()
-        }
+                ),
+            ).build()
     }
 
     /**
@@ -70,19 +63,11 @@ class CardTypeController(
     suspend fun getCardType(
         @PathParam("code") code: String,
     ): Response {
-        return try {
-            val cardType = cardTypeService.getCardTypeByCode(code)
+        val cardType =
+            cardTypeService.getCardTypeByCode(code)
+                ?: throw com.miguoliang.englishlearning.exception
+                    .NotFoundException("CardType", code)
 
-            when (cardType) {
-                null -> Response.status(Response.Status.NOT_FOUND)
-                    .entity(ErrorResponseFactory.notFound("CardType", code))
-                    .build()
-                else -> Response.ok(cardType.toDto()).build()
-            }
-        } catch (error: Exception) {
-            Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(ErrorResponseFactory.internalError(error.message ?: "Internal server error"))
-                .build()
-        }
+        return Response.ok(cardType.toDto()).build()
     }
 }

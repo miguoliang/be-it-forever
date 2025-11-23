@@ -8,10 +8,8 @@ import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class ReviewHistoryRepository : PanacheRepositoryBase<ReviewHistory, Long> {
-
-    suspend fun findByAccountCardId(accountCardId: Long): List<ReviewHistory> {
-        return find("accountCardId = :accountCardId", Parameters.with("accountCardId", accountCardId))
+    suspend fun findByAccountCardId(accountCardId: Long): List<ReviewHistory> =
+        find("accountCardId = :accountCardId", Parameters.with("accountCardId", accountCardId))
             .list<ReviewHistory>()
             .awaitSuspending()
-    }
 }

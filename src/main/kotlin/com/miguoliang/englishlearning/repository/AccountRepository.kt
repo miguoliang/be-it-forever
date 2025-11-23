@@ -8,10 +8,8 @@ import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class AccountRepository : PanacheRepositoryBase<Account, Long> {
-
-    suspend fun findByUsername(username: String): Account? {
-        return find("username = :username", Parameters.with("username", username))
+    suspend fun findByUsername(username: String): Account? =
+        find("username = :username", Parameters.with("username", username))
             .firstResult<Account>()
             .awaitSuspending()
-    }
 }

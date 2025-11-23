@@ -4,10 +4,19 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.time.Instant
 
 @Entity
-@Table(name = "translation_messages")
+@Table(
+    name = "translation_messages",
+    uniqueConstraints = [
+        UniqueConstraint(
+            columnNames = ["translation_key_code", "locale_code"],
+            name = "uk_translation_message_key_locale",
+        ),
+    ],
+)
 data class TranslationMessage(
     @Id
     @Column(name = "code")

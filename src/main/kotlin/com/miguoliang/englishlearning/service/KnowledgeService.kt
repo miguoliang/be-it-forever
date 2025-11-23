@@ -51,7 +51,8 @@ class KnowledgeService(
         if (codes.isEmpty()) {
             emptyMap()
         } else {
-            knowledgeRepository.findByCodeIn(codes)
+            knowledgeRepository
+                .findByCodeIn(codes)
                 .associateBy { knowledge -> knowledge.code }
         }
 }

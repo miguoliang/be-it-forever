@@ -38,7 +38,8 @@ class CardTypeService(
         if (codes.isEmpty()) {
             emptyMap()
         } else {
-            cardTypeRepository.findByCodeIn(codes)
+            cardTypeRepository
+                .findByCodeIn(codes)
                 .associateBy { cardType -> cardType.code }
         }
 }

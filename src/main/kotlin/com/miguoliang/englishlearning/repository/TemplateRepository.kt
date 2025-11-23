@@ -8,18 +8,12 @@ import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class TemplateRepository : PanacheRepositoryBase<Template, String> {
+    suspend fun streamAll(): List<Template> = findAll().list<Template>().awaitSuspending()
 
-    suspend fun streamAll(): List<Template> {
-        return findAll().list<Template>().awaitSuspending()
-    }
+    suspend fun findByCode(code: String): Template? = findById(code).awaitSuspending()
 
-    suspend fun findByCode(code: String): Template? {
-        return findById(code).awaitSuspending()
-    }
-
-    suspend fun findByName(name: String): Template? {
-        return find("name = :name", Parameters.with("name", name))
+    suspend fun findByName(name: String): Template? =
+        find("name = :name", Parameters.with("name", name))
             .firstResult<Template>()
             .awaitSuspending()
-    }
 }

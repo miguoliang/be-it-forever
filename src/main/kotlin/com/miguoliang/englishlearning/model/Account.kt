@@ -4,10 +4,16 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.time.Instant
 
 @Entity
-@Table(name = "accounts")
+@Table(
+    name = "accounts",
+    uniqueConstraints = [
+        UniqueConstraint(columnNames = ["username"], name = "uk_account_username"),
+    ],
+)
 data class Account(
     @Id
     @Column(name = "id")

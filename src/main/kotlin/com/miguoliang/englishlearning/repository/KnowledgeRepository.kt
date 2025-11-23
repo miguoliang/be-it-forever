@@ -11,25 +11,18 @@ import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class KnowledgeRepository : PanacheRepositoryBase<Knowledge, String> {
-
-    suspend fun findAllOrderedByCode(pageable: Pageable): List<Knowledge> {
-        return findAll(Sort.by("code"))
+    suspend fun findAllOrderedByCode(pageable: Pageable): List<Knowledge> =
+        findAll(Sort.by("code"))
             .page<Knowledge>(Page.of(pageable.page, pageable.size))
             .list<Knowledge>()
             .awaitSuspending()
-    }
 
-    suspend fun findByCode(code: String): Knowledge? {
-        return findById(code).awaitSuspending()
-    }
+    suspend fun findByCode(code: String): Knowledge? = findById(code).awaitSuspending()
 
-    suspend fun findByCodeIn(codes: Collection<String>): List<Knowledge> {
-        return find("code in :codes", Parameters.with("codes", codes))
+    suspend fun findByCodeIn(codes: Collection<String>): List<Knowledge> =
+        find("code in :codes", Parameters.with("codes", codes))
             .list<Knowledge>()
             .awaitSuspending()
-    }
 
-    suspend fun countAll(): Long {
-        return count().awaitSuspending()
-    }
+    suspend fun countAll(): Long = count().awaitSuspending()
 }

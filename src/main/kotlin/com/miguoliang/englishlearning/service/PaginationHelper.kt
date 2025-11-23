@@ -23,12 +23,11 @@ class PaginationHelper {
         data: List<T>,
         count: Long,
         pageable: Pageable,
-    ): Page<T> {
-        return Page(
+    ): Page<T> =
+        Page(
             content = data,
             number = pageable.page,
             size = pageable.size,
             totalElements = count,
         )
-    }
 }

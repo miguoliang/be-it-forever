@@ -3,11 +3,18 @@ package com.miguoliang.englishlearning.model
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
+import jakarta.persistence.Index
 import jakarta.persistence.Table
 import java.time.Instant
 
 @Entity
-@Table(name = "knowledge_rel")
+@Table(
+    name = "knowledge_rel",
+    indexes = [
+        Index(columnList = "source_knowledge_code", name = "idx_knowledge_rel_source"),
+        Index(columnList = "target_knowledge_code", name = "idx_knowledge_rel_target"),
+    ],
+)
 data class KnowledgeRel(
     @Id
     @Column(name = "id")

@@ -87,32 +87,36 @@ class AccountCardService(
         cardId: Long,
         quality: Int,
     ): AccountCard {
-        val card = accountCardRepository.findById(cardId).awaitSuspending()
-            ?: throw IllegalStateException("Card not found")
+        val card =
+            accountCardRepository.findById(cardId).awaitSuspending()
+                ?: throw IllegalStateException("Card not found")
 
         if (card.accountId != accountId) {
             throw IllegalArgumentException("Card does not belong to account")
         }
 
         // Apply SM-2 algorithm
-        val updatedCard = sm2Algorithm
-            .calculateNextReview(card, quality)
-            .copy(updatedAt = java.time.Instant.now())
+        val updatedCard =
+            sm2Algorithm
+                .calculateNextReview(card, quality)
+                .copy(updatedAt = java.time.Instant.now())
 
         // Save updated card
         accountCardRepository.persistAndFlush(updatedCard).awaitSuspending()
 
         // Create review history entry
-        val savedCardId = updatedCard.id
-            ?: throw IllegalStateException("Saved card must have an ID")
+        val savedCardId =
+            updatedCard.id
+                ?: throw IllegalStateException("Saved card must have an ID")
 
-        val reviewHistory = ReviewHistory(
-            id = null,
-            accountCardId = savedCardId,
-            quality = quality,
-            reviewedAt = LocalDateTime.now(),
-            createdBy = null,
-        )
+        val reviewHistory =
+            ReviewHistory(
+                id = null,
+                accountCardId = savedCardId,
+                quality = quality,
+                reviewedAt = LocalDateTime.now(),
+                createdBy = null,
+            )
         reviewHistoryRepository.persistAndFlush(reviewHistory).awaitSuspending()
 
         return updatedCard

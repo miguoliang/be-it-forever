@@ -3,11 +3,17 @@ package com.miguoliang.englishlearning.model
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
+import jakarta.persistence.Index
 import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "review_history")
+@Table(
+    name = "review_history",
+    indexes = [
+        Index(columnList = "account_card_id", name = "idx_review_history_account_card"),
+    ],
+)
 data class ReviewHistory(
     @Id
     @Column(name = "id")

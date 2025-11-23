@@ -14,6 +14,7 @@ class StatsService(
 ) {
     /**
      * Get comprehensive learning statistics for an account.
+     * Uses database aggregation for efficiency instead of loading all cards into memory.
      *
      * @param accountId Account ID
      * @return StatsDto with statistics
@@ -21,28 +22,16 @@ class StatsService(
     suspend fun getStats(accountId: Long): StatsDto {
         val now = LocalDateTime.now()
 
-        // Fetch all cards once and compute statistics in memory to avoid N+1
-        val allCards = accountCardRepository.findByAccountId(accountId)
+        // Use database aggregation for efficient statistics computation
+        val stats = accountCardRepository.getStatsByAccountId(accountId, now)
+        val byCardType = accountCardRepository.getCardTypeStatsByAccountId(accountId)
 
-        return if (allCards.isEmpty()) {
-            StatsDto(
-                totalCards = 0L,
-                newCards = 0L,
-                learningCards = 0L,
-                dueToday = 0L,
-                byCardType = emptyMap(),
-            )
-        } else {
-            StatsDto(
-                totalCards = allCards.size.toLong(),
-                newCards = allCards.count { it.repetitions == 0 }.toLong(),
-                learningCards = allCards.count { it.repetitions > 0 && it.repetitions < 3 }.toLong(),
-                dueToday = allCards.count { it.nextReviewDate <= now }.toLong(),
-                byCardType = allCards
-                    .groupingBy { it.cardTypeCode }
-                    .eachCount()
-                    .mapValues { it.value.toLong() },
-            )
-        }
+        return StatsDto(
+            totalCards = stats["total"] ?: 0L,
+            newCards = stats["new"] ?: 0L,
+            learningCards = stats["learning"] ?: 0L,
+            dueToday = stats["dueToday"] ?: 0L,
+            byCardType = byCardType,
+        )
     }
 }

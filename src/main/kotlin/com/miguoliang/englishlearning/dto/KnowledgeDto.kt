@@ -18,9 +18,10 @@ fun com.miguoliang.englishlearning.model.Knowledge.toDto(): KnowledgeDto =
         code = this.code,
         name = this.name,
         description = this.description,
-        metadata = this.metadata?.let { metadata ->
-            buildMap {
-                metadata.level?.let { put("level", it) }
-            }
-        },
+        metadata =
+            this.metadata?.let { metadata ->
+                buildMap {
+                    metadata.level?.let { put("level", it) }
+                }
+            },
     )

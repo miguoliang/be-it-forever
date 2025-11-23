@@ -8,7 +8,6 @@ import jakarta.inject.Singleton
 
 @ApplicationScoped
 class FreeMarkerConfig {
-
     @Produces
     @Singleton
     fun freeMarkerConfiguration(): Configuration {

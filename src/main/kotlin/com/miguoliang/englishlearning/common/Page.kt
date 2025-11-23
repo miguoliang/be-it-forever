@@ -17,5 +17,8 @@ data class Pageable(
 }
 
 object PageRequest {
-    fun of(page: Int, size: Int): Pageable = Pageable(page, size)
+    fun of(
+        page: Int,
+        size: Int,
+    ): Pageable = Pageable(page, size)
 }

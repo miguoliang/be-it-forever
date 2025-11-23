@@ -8,10 +8,8 @@ import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class TranslationKeyRepository : PanacheRepositoryBase<TranslationKey, String> {
-
-    suspend fun findByKey(key: String): TranslationKey? {
-        return find("key = :key", Parameters.with("key", key))
+    suspend fun findByKey(key: String): TranslationKey? =
+        find("key = :key", Parameters.with("key", key))
             .firstResult<TranslationKey>()
             .awaitSuspending()
-    }
 }

@@ -14,10 +14,11 @@ class CodeGenerationService(
 
         val sequenceName = "code_seq_${prefix.lowercase()}"
 
-        val rowSet = pool
-            .query("SELECT nextval('$sequenceName')")
-            .execute()
-            .awaitSuspending()
+        val rowSet =
+            pool
+                .query("SELECT nextval('$sequenceName')")
+                .execute()
+                .awaitSuspending()
 
         val row = rowSet.iterator().next()
         val nextValue = row.getLong(0)

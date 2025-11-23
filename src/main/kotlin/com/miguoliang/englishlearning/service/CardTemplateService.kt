@@ -44,15 +44,17 @@ class CardTemplateService(
         role: String,
     ): String {
         // Find template for this card type and role
-        val rel = cardTypeTemplateRelRepository.findByCardTypeCodeAndRole(cardType.code, role)
-        if (rel == null) {
-            return ""
-        }
+        val rel =
+            cardTypeTemplateRelRepository.findByCardTypeCodeAndRole(cardType.code, role)
+                ?: throw com.miguoliang.englishlearning.exception.TemplateNotFoundException(
+                    "No template mapping found for cardType=${cardType.code}, role=$role",
+                )
 
-        val template = templateService.getTemplateByCode(rel.templateCode)
-        if (template == null) {
-            return ""
-        }
+        val template =
+            templateService.getTemplateByCode(rel.templateCode)
+                ?: throw com.miguoliang.englishlearning.exception.TemplateNotFoundException(
+                    "Template not found: ${rel.templateCode}",
+                )
 
         // Validate template format
         if (template.format != "ftl") {
@@ -139,26 +141,28 @@ class CardTemplateService(
     private fun prepareDataModel(
         knowledge: Knowledge,
         relatedKnowledge: List<Knowledge>,
-    ): Map<String, Any> = buildMap {
-        // Add main knowledge fields
-        put("name", knowledge.name)
-        put("description", knowledge.description ?: "")
-        put("code", knowledge.code)
+    ): Map<String, Any> =
+        buildMap {
+            // Add main knowledge fields
+            put("name", knowledge.name)
+            put("description", knowledge.description ?: "")
+            put("code", knowledge.code)
 
-        // Add metadata as nested map for dot notation access
-        put("metadata", knowledge.metadata?.let { convertMetadataToMap(it) } ?: emptyMap<String, Any>())
+            // Add metadata as nested map for dot notation access
+            put("metadata", knowledge.metadata?.let { convertMetadataToMap(it) } ?: emptyMap<String, Any>())
 
-        // Add related knowledge list for iteration
-        val relatedKnowledgeList = relatedKnowledge.map { related ->
-            mapOf(
-                "code" to related.code,
-                "name" to related.name,
-                "description" to (related.description ?: ""),
-                "metadata" to (related.metadata?.let { convertMetadataToMap(it) } ?: emptyMap<String, Any>()),
-            )
+            // Add related knowledge list for iteration
+            val relatedKnowledgeList =
+                relatedKnowledge.map { related ->
+                    mapOf(
+                        "code" to related.code,
+                        "name" to related.name,
+                        "description" to (related.description ?: ""),
+                        "metadata" to (related.metadata?.let { convertMetadataToMap(it) } ?: emptyMap<String, Any>()),
+                    )
+                }
+            put("relatedKnowledge", relatedKnowledgeList)
         }
-        put("relatedKnowledge", relatedKnowledgeList)
-    }
 
     /**
      * Converts Metadata object to Map for FreeMarker dot notation access.

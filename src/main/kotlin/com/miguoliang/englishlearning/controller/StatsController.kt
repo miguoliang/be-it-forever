@@ -1,6 +1,5 @@
 package com.miguoliang.englishlearning.controller
 
-import com.miguoliang.englishlearning.dto.StatsDto
 import com.miguoliang.englishlearning.service.StatsService
 import jakarta.ws.rs.*
 import jakarta.ws.rs.core.MediaType
@@ -27,16 +26,10 @@ class StatsController(
     @GET
     @Path("/me/stats")
     suspend fun getStats(): Response {
-        return try {
-            // TODO: Extract accountId from JWT token
-            val accountId = 1L // Placeholder
+        // TODO: Extract accountId from JWT token
+        val accountId = 1L // Placeholder
 
-            val stats = statsService.getStats(accountId)
-            Response.ok(stats).build()
-        } catch (error: Exception) {
-            Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(StatsDto(0L, 0L, 0L, 0L, emptyMap()))
-                .build()
-        }
+        val stats = statsService.getStats(accountId)
+        return Response.ok(stats).build()
     }
 }
