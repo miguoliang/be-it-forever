@@ -44,6 +44,11 @@ dependencies {
     // Validation
     implementation("io.quarkus:quarkus-hibernate-validator")
 
+    // Security - JWT Authentication
+    implementation("io.quarkus:quarkus-smallrye-jwt")
+    implementation("io.quarkus:quarkus-smallrye-jwt-build")
+    implementation("io.quarkus:quarkus-security")
+
     // Health & Metrics
     implementation("io.quarkus:quarkus-smallrye-health")
     implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
@@ -72,6 +77,7 @@ dependencies {
     testImplementation("io.rest-assured:rest-assured")
     testImplementation("io.quarkus:quarkus-test-hibernate-reactive-panache")
     testImplementation("org.testcontainers:postgresql")
+    testImplementation("io.quarkus:quarkus-test-security-jwt")
 }
 
 java {

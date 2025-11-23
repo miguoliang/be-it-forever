@@ -9,7 +9,12 @@ import com.miguoliang.englishlearning.dto.toDto
 import com.miguoliang.englishlearning.service.AccountCardService
 import com.miguoliang.englishlearning.service.CardTemplateService
 import com.miguoliang.englishlearning.service.CardTypeService
+import com.miguoliang.englishlearning.service.JwtService
 import com.miguoliang.englishlearning.service.KnowledgeService
+import io.quarkus.security.Authenticated
+import io.quarkus.security.identity.SecurityIdentity
+import jakarta.annotation.security.RolesAllowed
+import jakarta.inject.Inject
 import jakarta.validation.Valid
 import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DefaultValue
@@ -21,15 +26,23 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import org.eclipse.microprofile.config.inject.ConfigProperty
 
 /**
  * REST resource for Account Card endpoints.
- * Access: client role (for /me endpoints) or operator role (for {accountId} endpoints).
  *
- * Note: JWT authentication is not yet implemented. For MVP, accountId comes from configuration.
- * TODO: Implement JWT authentication and extract accountId from JWT token 'sub' claim for /me endpoints.
- * See: https://quarkus.io/guides/security-jwt
+ * Authentication & Authorization:
+ * - All /me endpoints: Require authentication via JWT token. AccountId is extracted from JWT 'sub' claim.
+ * - /{accountId} endpoints: Require 'operator' role for cross-account access.
+ *
+ * JWT Token Requirements:
+ * - 'sub' claim: Must contain the account ID (numeric string)
+ * - 'groups' claim: Must contain role(s): ["client"] for regular users, ["client", "operator"] for operators
+ * - 'iss' claim: Must match configured issuer
+ * - 'exp' claim: Token must not be expired
+ *
+ * Access Patterns:
+ * - Client users can only access their own data via /me endpoints
+ * - Operator users can access any account's data via /{accountId} endpoints
  */
 @Path("/api/v1/accounts")
 @Produces(MediaType.APPLICATION_JSON)
@@ -39,23 +52,27 @@ class AccountCardResource(
     private val knowledgeService: KnowledgeService,
     private val cardTypeService: CardTypeService,
     private val cardTemplateService: CardTemplateService,
-    @ConfigProperty(name = "app.default.account.id") private val defaultAccountId: Long,
+    private val jwtService: JwtService,
 ) {
+    @Inject
+    lateinit var securityIdentity: SecurityIdentity
+
     /**
      * List current account's cards with optional filtering.
      * GET /api/v1/accounts/me/cards
-     * TODO: Extract accountId from JWT token 'sub' claim
+     *
+     * Requires: JWT authentication (accountId extracted from token 'sub' claim)
      */
     @GET
     @Path("/me/cards")
+    @Authenticated
     suspend fun listMyCards(
         @QueryParam("card_type_code") card_type_code: String?,
         @QueryParam("status") status: String?,
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int,
     ): Response {
-        // TODO: Extract accountId from JWT token (see class-level documentation)
-        val accountId = defaultAccountId
+        val accountId = jwtService.extractAccountId(securityIdentity)
 
         val pageable = PageRequest.of(page, size)
         // OPTIMIZED: Use projection query to fetch data in single JOIN query
@@ -85,10 +102,13 @@ class AccountCardResource(
     /**
      * List specific account's cards (operator access).
      * GET /api/v1/accounts/{accountId}/cards
-     * TODO: Validate operator role from JWT token
+     *
+     * Requires: JWT authentication with 'operator' role
+     * Allows operators to access any account's data
      */
     @GET
     @Path("/{accountId}/cards")
+    @RolesAllowed("operator")
     suspend fun listAccountCards(
         @PathParam("accountId") accountId: Long,
         @QueryParam("card_type_code") card_type_code: String?,
@@ -96,6 +116,8 @@ class AccountCardResource(
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int,
     ): Response {
+        // Validate that operator can access this account
+        jwtService.validateAccountAccess(securityIdentity, accountId)
         val pageable = PageRequest.of(page, size)
         val pageResult = accountCardService.getAccountCards(accountId, pageable, card_type_code, status)
 
@@ -138,15 +160,16 @@ class AccountCardResource(
     /**
      * Get a specific card for current account.
      * GET /api/v1/accounts/me/cards/{cardId}
-     * TODO: Extract accountId from JWT token 'sub' claim
+     *
+     * Requires: JWT authentication (accountId extracted from token 'sub' claim)
      */
     @GET
     @Path("/me/cards/{cardId}")
+    @Authenticated
     suspend fun getMyCard(
         @PathParam("cardId") cardId: Long,
     ): Response {
-        // TODO: Extract accountId from JWT token (see class-level documentation)
-        val accountId = defaultAccountId
+        val accountId = jwtService.extractAccountId(securityIdentity)
 
         val card =
             accountCardService.getCardById(accountId, cardId)
@@ -174,17 +197,18 @@ class AccountCardResource(
     /**
      * Get cards due for review for current account.
      * GET /api/v1/accounts/me/cards:due
-     * TODO: Extract accountId from JWT token 'sub' claim
+     *
+     * Requires: JWT authentication (accountId extracted from token 'sub' claim)
      */
     @GET
     @Path("/me/cards:due")
+    @Authenticated
     suspend fun getDueCards(
         @QueryParam("card_type_code") card_type_code: String?,
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int,
     ): Response {
-        // TODO: Extract accountId from JWT token (see class-level documentation)
-        val accountId = defaultAccountId
+        val accountId = jwtService.extractAccountId(securityIdentity)
 
         val pageable = PageRequest.of(page, size)
         val pageResult = accountCardService.getDueCards(accountId, pageable, card_type_code)
@@ -233,13 +257,15 @@ class AccountCardResource(
     /**
      * Initialize cards for current account.
      * POST /api/v1/accounts/me/cards:initialize
-     * TODO: Extract accountId from JWT token 'sub' claim, trigger Temporal workflow
+     *
+     * Requires: JWT authentication (accountId extracted from token 'sub' claim)
+     * TODO: Trigger Temporal workflow for async card initialization
      */
     @POST
     @Path("/me/cards:initialize")
+    @Authenticated
     suspend fun initializeCards(request: InitializeCardsRequestDto?): Response {
-        // TODO: Extract accountId from JWT token (see class-level documentation)
-        val accountId = defaultAccountId
+        val accountId = jwtService.extractAccountId(securityIdentity)
 
         val created = accountCardService.initializeCards(accountId, request?.cardTypeCodes)
         return Response.ok(mapOf("created" to created, "skipped" to 0)).build()
@@ -248,16 +274,17 @@ class AccountCardResource(
     /**
      * Submit a review result and update SM-2 algorithm state.
      * POST /api/v1/accounts/me/cards/{cardId}:review
-     * TODO: Extract accountId from JWT token 'sub' claim
+     *
+     * Requires: JWT authentication (accountId extracted from token 'sub' claim)
      */
     @POST
     @Path("/me/cards/{cardId}:review")
+    @Authenticated
     suspend fun reviewCard(
         @PathParam("cardId") cardId: Long,
         @Valid request: ReviewRequestDto,
     ): Response {
-        // TODO: Extract accountId from JWT token (see class-level documentation)
-        val accountId = defaultAccountId
+        val accountId = jwtService.extractAccountId(securityIdentity)
 
         // Validate quality range
         require(request.quality in 0..5) { "Quality must be between 0 and 5" }
