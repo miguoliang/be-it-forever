@@ -10,10 +10,10 @@ pub mod knowledge;
 pub mod card_types;
 pub mod cards;
 pub mod stats;
+pub mod auth;
 
 pub struct AppState {
     pub db: DbPool,
-    #[allow(dead_code)]
     pub config: Config,
 }
 
@@ -31,6 +31,9 @@ pub fn default_page_size() -> i64 {
 
 pub fn routes(state: Arc<AppState>) -> Router {
     Router::new()
+        // Auth endpoints
+        .route("/auth/login", post(auth::login))
+        .route("/auth/signup", post(auth::login)) // Alias signup to login for dev
         // Knowledge endpoints
         .route("/knowledge", get(knowledge::list_knowledge).post(knowledge::create_knowledge))
         .route("/knowledge/:code", get(knowledge::get_knowledge).put(knowledge::update_knowledge).delete(knowledge::delete_knowledge))

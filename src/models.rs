@@ -64,7 +64,6 @@ pub struct CardTypeTemplateRel {
     pub updated_by: Option<String>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Account {
     pub id: i64,

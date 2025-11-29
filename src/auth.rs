@@ -16,7 +16,6 @@ pub struct Claims {
 }
 
 impl Claims {
-    #[allow(dead_code)]
     pub fn new(account_id: &str, role: &str) -> Self {
         let expiration = chrono::Utc::now()
             .checked_add_signed(chrono::Duration::hours(24))
@@ -30,7 +29,6 @@ impl Claims {
         }
     }
 
-    #[allow(dead_code)]
     pub fn encode(&self, secret: &str) -> Result<String> {
         encode(
             &Header::default(),
