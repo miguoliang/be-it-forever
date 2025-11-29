@@ -45,8 +45,8 @@ pub async fn login(
     // Find or create account
     let account = find_or_create_account(&state.db, &req.username).await?;
 
-    // Determine role (simple logic for dev: username 'operator' = operator)
-    let role = if req.username == "operator" {
+    // Determine role (simple logic for dev: username 'operator' or 'admin' = operator)
+    let role = if req.username == "operator" || req.username == "admin" {
         "operator"
     } else {
         "client"

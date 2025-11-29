@@ -8,8 +8,8 @@ CREATE TABLE knowledge (
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     metadata JSONB,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
     updated_by VARCHAR(255)
 );
@@ -21,8 +21,8 @@ CREATE TABLE knowledge_rel (
     id BIGSERIAL PRIMARY KEY,
     source_knowledge_code VARCHAR(20) NOT NULL REFERENCES knowledge(code),
     target_knowledge_code VARCHAR(20) NOT NULL REFERENCES knowledge(code),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
     updated_by VARCHAR(255),
     CONSTRAINT no_self_ref CHECK (source_knowledge_code != target_knowledge_code)
@@ -38,8 +38,8 @@ CREATE TABLE templates (
     description TEXT NOT NULL,
     format VARCHAR(255) NOT NULL,
     content BYTEA NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
     updated_by VARCHAR(255)
 );
@@ -49,8 +49,8 @@ CREATE TABLE card_types (
     code VARCHAR(20) PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     description TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
     updated_by VARCHAR(255)
 );
@@ -61,8 +61,8 @@ CREATE TABLE card_type_template_rel (
     card_type_code VARCHAR(20) NOT NULL REFERENCES card_types(code),
     template_code VARCHAR(20) NOT NULL REFERENCES templates(code),
     role VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
     updated_by VARCHAR(255)
 );
@@ -74,8 +74,8 @@ CREATE INDEX idx_card_type_template_rel_template ON card_type_template_rel(templ
 CREATE TABLE translation_keys (
     code VARCHAR(20) PRIMARY KEY,
     key VARCHAR(100) NOT NULL UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
     updated_by VARCHAR(255)
 );
@@ -86,8 +86,8 @@ CREATE TABLE translation_messages (
     translation_key_code VARCHAR(20) NOT NULL REFERENCES translation_keys(code),
     locale_code VARCHAR(10) NOT NULL,
     message TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
     updated_by VARCHAR(255),
     CONSTRAINT unique_key_locale UNIQUE (translation_key_code, locale_code)
@@ -100,8 +100,8 @@ CREATE INDEX idx_translation_messages_locale ON translation_messages(locale_code
 CREATE TABLE accounts (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
     updated_by VARCHAR(255)
 );
@@ -115,10 +115,10 @@ CREATE TABLE account_cards (
     ease_factor DECIMAL(5,2) NOT NULL DEFAULT 2.5,
     interval_days INTEGER NOT NULL DEFAULT 1,
     repetitions INTEGER NOT NULL DEFAULT 0,
-    next_review_date TIMESTAMP NOT NULL,
-    last_reviewed_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    next_review_date TIMESTAMPTZ NOT NULL,
+    last_reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
     updated_by VARCHAR(255),
     CONSTRAINT unique_account_knowledge_card_type UNIQUE (account_id, knowledge_code, card_type_code)
@@ -134,8 +134,8 @@ CREATE TABLE review_history (
     id BIGSERIAL PRIMARY KEY,
     account_card_id BIGINT NOT NULL REFERENCES account_cards(id),
     quality INTEGER NOT NULL,
-    reviewed_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    reviewed_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
     CONSTRAINT valid_quality CHECK (quality >= 0 AND quality <= 5)
 );

@@ -42,10 +42,10 @@ pub fn routes(state: Arc<AppState>) -> Router {
         .route("/card-types/:code", get(card_types::get_card_type))
         // Account card endpoints
         .route("/accounts/me/cards", get(cards::list_my_cards))
-        .route("/accounts/me/cards:due", get(cards::get_due_cards))
-        .route("/accounts/me/cards:initialize", post(cards::initialize_cards))
+        .route("/accounts/me/cards/due", get(cards::get_due_cards))
+        .route("/accounts/me/cards/initialize", post(cards::initialize_cards))
         .route("/accounts/me/cards/:card_id", get(cards::get_my_card))
-        .route("/accounts/me/cards/:card_id:review", post(cards::review_card))
+        .route("/accounts/me/cards/:card_id/review", post(cards::review_card))
         // Stats endpoints
         .route("/accounts/me/stats", get(stats::get_my_stats))
         .with_state(state)

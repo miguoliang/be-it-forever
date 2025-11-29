@@ -48,6 +48,7 @@ csv = "1"
 
 # Validation
 validator = { version = "0.18", features = ["derive"] }
+axum-server = { version = "0.7.3", features = ["tls-rustls"] }
 
 [profile.release]
 opt-level = 3

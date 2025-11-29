@@ -52,9 +52,19 @@ async fn main() -> anyhow::Result<()> {
     // Start server
     let addr = format!("{}:{}", config.host, config.port);
     tracing::info!("Starting server on {}", addr);
+    tracing::info!("Using TLS/HTTP2 with certs/cert.pem and certs/key.pem");
 
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    axum::serve(listener, app).await?;
+    // Configure TLS
+    let tls_config = axum_server::tls_rustls::RustlsConfig::from_pem_file(
+        "certs/cert.pem",
+        "certs/key.pem",
+    )
+    .await?;
+
+    // Bind with Axum Server and TLS
+    axum_server::bind_rustls(addr.parse()?, tls_config)
+        .serve(app.into_make_service())
+        .await?;
 
     Ok(())
 }
