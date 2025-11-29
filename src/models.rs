@@ -104,7 +104,7 @@ pub struct ReviewHistory {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateKnowledgeRequest {
-    pub code: String,
+    pub code: Option<String>,
     pub name: String,
     pub description: String,
     pub metadata: Option<serde_json::Value>,

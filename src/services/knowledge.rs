@@ -59,13 +59,17 @@ impl KnowledgeService {
         req: crate::models::CreateKnowledgeRequest,
         operator_id: &str,
     ) -> Result<Knowledge> {
-        // Check if exists
-        if let Ok(_) = Self::get_knowledge_by_code(pool, &req.code).await {
-            return Err(AppError::BadRequest(format!(
-                "Knowledge with code {} already exists",
-                req.code
-            )));
-        }
+        // Generate code
+        // If code is "CS", generate CS-XXXXXXX
+        // Otherwise default to ST-XXXXXXX
+        let prefix = match req.code.as_deref() {
+            Some("CS") => "CS",
+            _ => "ST",
+        };
+        
+        let code = crate::db::generate_code(pool, prefix).await.map_err(|e| {
+            AppError::InternalServerError(format!("Failed to generate code: {}", e))
+        })?;
 
         let now = chrono::Utc::now();
         let knowledge = sqlx::query_as::<_, Knowledge>(
@@ -75,7 +79,7 @@ impl KnowledgeService {
             RETURNING *
             "#,
         )
-        .bind(req.code)
+        .bind(code)
         .bind(req.name)
         .bind(req.description)
         .bind(req.metadata)
