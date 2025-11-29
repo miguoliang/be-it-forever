@@ -51,6 +51,7 @@ All users must authenticate to access the system.
     - User enters credentials.
     - System validates credentials and issues a secure session token (JWT).
     - **Role Detection**:
+        - **Operator Managers** are redirected to the Manager Dashboard (`/manager`).
         - **Operators** are redirected to the Operator Dashboard (`/operator`).
         - **Learners** are redirected to the Learning Dashboard (`/learn`).
 3.  **Sign Out**:
@@ -72,18 +73,26 @@ End-users focused on mastering content.
     - View dashboard with statistics (Total, New, Learning, Due Today).
 
 ### 3.2 Content Managers (Operators)
-Internal users managing the knowledge base.
+Internal users who manage the learning content. They cannot directly modify the live knowledge base.
 
 **Key Workflows**:
-1.  **Batch Import/Export**:
-    - Export existing knowledge to CSV.
-    - Edit/Add rows in CSV.
-    - Upload CSV -> System validates -> System compares changes.
-2.  **Approval Workflow**:
-    - Review validation results (New, Updated, Deleted items).
-    - Approve changes -> System applies updates and generates codes for new items.
-3.  **Single Item Management**:
-    - Create/Edit individual items via Operator Dashboard (Drawer UI).
+1.  **Request Submission**:
+    - Create/Edit/Delete knowledge items via the Operator Dashboard.
+    - These actions create a **Change Request** instead of modifying data directly.
+2.  **Request Tracking**:
+    - View status of submitted requests (Pending, Approved, Rejected).
+
+### 3.3 Operator Managers
+Senior internal users with authority to approve changes.
+
+**Key Workflows**:
+1.  **Review Workflow**:
+    - View list of pending Change Requests.
+    - Review diffs (Old vs New).
+    - Approve -> Changes applied to live DB.
+    - Reject -> Request closed with reason.
+2.  **Direct Management**:
+    - Can perform all Operator actions + Direct CRUD (optional, for emergencies).
 
 ---
 
