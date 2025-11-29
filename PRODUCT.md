@@ -91,8 +91,6 @@ Senior internal users with authority to approve changes.
     - Review diffs (Old vs New).
     - Approve -> Changes applied to live DB.
     - Reject -> Request closed with reason.
-2.  **Direct Management**:
-    - Can perform all Operator actions + Direct CRUD (optional, for emergencies).
 
 ---
 
