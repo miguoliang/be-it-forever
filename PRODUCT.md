@@ -39,12 +39,31 @@ The system is built on the **SM-2 algorithm**, which determines the optimal time
 
 ## 3. User Roles & Workflows
 
+### 3.0 Authentication (Common)
+All users must authenticate to access the system.
+
+**Key Workflows**:
+1.  **Sign Up**:
+    - User provides username and password.
+    - System creates a new account.
+    - **Learner Initialization**: For new learner accounts, the system automatically triggers an asynchronous background job to create `Account Cards` for all existing `Knowledge Items`. This ensures the user has content to review immediately.
+2.  **Sign In**:
+    - User enters credentials.
+    - System validates credentials and issues a secure session token (JWT).
+    - **Role Detection**:
+        - **Operators** are redirected to the Operator Dashboard (`/operator`).
+        - **Learners** are redirected to the Learning Dashboard (`/learn`).
+3.  **Sign Out**:
+    - User clicks "Sign Out".
+    - System invalidates the session locally (clears token).
+    - User is redirected to the Landing Page (`/`).
+
 ### 3.1 Learners (Clients)
 End-users focused on mastering content.
 
 **Key Workflows**:
 1.  **Onboarding**: 
-    - Sign up -> System automatically initializes `Account Cards` for all available knowledge.
+    - (Covered in Sign Up) - Immediate access to learning content upon first login.
 2.  **Daily Review**:
     - View cards due for review (`next_review_date <= today`).
     - Reveal answer and rate quality (0-5).
