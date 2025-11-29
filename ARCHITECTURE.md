@@ -154,23 +154,6 @@ A heavy job with multiple sub-tasks: CSV upload, validation, comparison, and app
 
 ## Part 2: Technology Architecture
 
-## Part 2.1: Technology Stack
-
-### Overview
-A Quarkus reactive backend application for English knowledge learning with spaced repetition (SM-2 algorithm), supporting knowledge items and predefined card types.
-
-### Technology Stack
-- **Framework**: Quarkus 3.29.4 with Hibernate Reactive
-- **Database**: PostgreSQL with Hibernate Reactive Panache (reactive database access)
-- **Migration**: Flyway
-- **Workflow Engine**: Temporal (for heavy, multi-step workflows)
-- **Template Engine**: Qute (Quarkus reactive template engine for card content rendering)
-- **Language**: Kotlin 2.3.0-RC
-- **Java**: Java 25
-- **Build**: Gradle with Kotlin DSL
-
----
-
 ## Part 2.2: Code Specification
 
 ### Code Pattern Format
@@ -233,24 +216,17 @@ A centralized `CodeGenerationService` handles code generation:
 4. Ensure atomicity and thread-safety
 5. Validate generated code format
 
-**Implementation Pattern**:
-```kotlin
-@ApplicationScoped
-class CodeGenerationService(
-    private val sessionFactory: Mutiny.SessionFactory
-) {
-    suspend fun generateCode(prefix: String): String {
-        require(prefix in listOf("ST", "CS")) { "Invalid prefix: $prefix" }
-        require(prefix.length == 2) { "Prefix must be exactly 2 characters" }
-
-        val sequenceName = "code_seq_${prefix.lowercase()}"
-        val nextValue = sessionFactory.withSession { session ->
-            session.createNativeQuery("SELECT nextval('$sequenceName')", Long::class.java)
-                .singleResult
-        }.awaitSuspending()
-
-        val number = nextValue.toString().padStart(7, '0')
-        require(number.length <= 7) { "Sequence value exceeds 7 digits" }
+**Implementation Pattern (Pseudo-code)**:
+```
+class CodeGenerationService {
+    async function generateCode(prefix): String {
+        require(prefix in ["ST", "CS"], "Invalid prefix")
+        
+        sequenceName = "code_seq_" + prefix.lowercase()
+        nextValue = db.query("SELECT nextval('$sequenceName')")
+        
+        number = padStart(nextValue.toString(), 7, '0')
+        require(number.length <= 7, "Sequence overflow")
 
         return "$prefix-$number"
     }
@@ -298,19 +274,19 @@ class CodeGenerationService(
 
 Before using generated codes, validate format:
 
-```kotlin
-fun validateCode(code: String): Boolean {
-    val pattern = Regex("^(ST|CS)-\\d{7}$")
-    return pattern.matches(code) && code.length == 10
+```
+function validateCode(code: String): Boolean {
+    pattern = "^(ST|CS)-\d{7}$"
+    return match(code, pattern)
 }
 ```
 
 #### Usage in Entity Creation
 
 **Example**: Creating a knowledge item
-```kotlin
-val code = codeGenerationService.generateCode("ST")
-val knowledge = Knowledge(
+```
+code = codeGenerationService.generateCode("ST")
+knowledge = Knowledge(
     code = code,
     name = "Example",
     description = "Description",
@@ -340,26 +316,20 @@ repository.save(knowledge)
 
 All database fields use the following standardized semantic data type definitions based on usage patterns:
 
-| Semantic Type | Database Type | Kotlin Type | Usage |
-|--------------|---------------|-------------|-------|
-| `code` | `VARCHAR(20)` | `String` | Immutable code identifiers (e.g., `ST-0000001`) |
-| `short_string` | `VARCHAR(255)` | `String` | Short text fields (name, username, role) |
-| `long_string` | `TEXT` | `String` | Long text fields (description, message) |
-| `blob` | `BYTEA` | `ByteArray` | Binary large object fields (content) |
-| `i18n_key` | `VARCHAR(100)` | `String` | i18n translation key identifiers |
-| `i18n_locale` | `VARCHAR(10)` | `String` | i18n locale codes (e.g., `zh-CN`, `es-ES`) |
-| `id` | `BIGSERIAL` | `Long` | Auto-increment primary keys |
-| `decimal` | `DECIMAL(5,2)` | `BigDecimal` | Decimal numeric values (e.g., ease_factor) |
-| `integer` | `INTEGER` | `Int` | Integer numeric values (interval_days, repetitions, quality) |
-| `local_time` | `TIMESTAMP` | `LocalDateTime` | Date-time fields with time parts (next_review_date, last_reviewed_at, reviewed_at) |
-| `utc_time` | `TIMESTAMP` | `Instant` | UTC timestamp fields (created_at, updated_at) |
-| `jsonb` | `JSONB` | `String` | JSON metadata (requires custom converter) |
-
-**Implementation Notes**:
-- Use `@Column` annotation for snake_case to camelCase conversion
-- For JSONB fields, consider using a custom converter or Jackson ObjectMapper for JSON serialization/deserialization
-- Use nullable types (`String?`, `Instant?`) for nullable database fields
-- R2DBC automatically handles type conversion for standard types
+| Semantic Type | Database Type | Usage |
+|--------------|---------------|-------|
+| `code` | `VARCHAR(20)` | Immutable code identifiers (e.g., `ST-0000001`) |
+| `short_string` | `VARCHAR(255)` | Short text fields (name, username, role) |
+| `long_string` | `TEXT` | Long text fields (description, message) |
+| `blob` | `BYTEA` | Binary large object fields (content) |
+| `i18n_key` | `VARCHAR(100)` | i18n translation key identifiers |
+| `i18n_locale` | `VARCHAR(10)` | i18n locale codes (e.g., `zh-CN`, `es-ES`) |
+| `id` | `BIGSERIAL` | Auto-increment primary keys |
+| `decimal` | `DECIMAL(5,2)` | Decimal numeric values (e.g., ease_factor) |
+| `integer` | `INTEGER` | Integer numeric values (interval_days, repetitions, quality) |
+| `local_time` | `TIMESTAMP` | Date-time fields with time parts (next_review_date, last_reviewed_at, reviewed_at) |
+| `utc_time` | `TIMESTAMP` | UTC timestamp fields (created_at, updated_at) |
+| `jsonb` | `JSONB` | JSON metadata |
 
 ---
 
@@ -369,12 +339,12 @@ All database fields use the following standardized semantic data type definition
 
 The following audit fields are used across tables but are not shown in the Core ER Diagram to keep it clean:
 
-| Field Name | Semantic Type | Database Type | Kotlin Type | Description |
-|------------|---------------|---------------|-------------|-------------|
-| `created_at` | `utc_time` | `TIMESTAMP` | `Instant` | Creation timestamp |
-| `updated_at` | `utc_time` | `TIMESTAMP` | `Instant` | Last update timestamp |
-| `created_by` | `short_string` | `VARCHAR(255)` | `String` | Username or identifier of internal user who created the record |
-| `updated_by` | `short_string` | `VARCHAR(255)` | `String` | Username or identifier of internal user who last updated the record |
+| Field Name | Semantic Type | Database Type | Description |
+|------------|---------------|---------------|-------------|
+| `created_at` | `utc_time` | `TIMESTAMP` | Creation timestamp |
+| `updated_at` | `utc_time` | `TIMESTAMP` | Last update timestamp |
+| `created_by` | `short_string` | `VARCHAR(255)` | Username or identifier of internal user who created the record |
+| `updated_by` | `short_string` | `VARCHAR(255)` | Username or identifier of internal user who last updated the record |
 
 ### Audit Fields by Table
 
@@ -392,8 +362,8 @@ The following audit fields are used across tables but are not shown in the Core 
 | `review_history` | ✓ | | ✓ | |
 
 **Notes**:
-- All timestamp audit fields use `utc_time` semantic type (`TIMESTAMP` → `Instant` in Kotlin) and are stored in UTC.
-- User audit fields use `short_string` semantic type (`VARCHAR(255)` → `String` in Kotlin) to store internal user identifiers.
+- All timestamp audit fields use `utc_time` semantic type and are stored in UTC.
+- User audit fields use `short_string` semantic type to store internal user identifiers.
 - `review_history` table does not have `updated_at` and `updated_by` fields as it represents immutable historical records that should not be modified after creation.
 - Review-related fields (`reviewed_at`, `last_reviewed_at`) are core business fields and remain in the Core ER Diagram as they track account review actions.
 
@@ -831,490 +801,36 @@ The API uses a unified path structure with role-based access control via JWT tok
 - Token signature ensures role cannot be tampered with
 - Same endpoint paths, different permissions based on role
 
----
+## Part 2.6: API Design
 
-## Unified API Endpoints
+### Design Principles
 
-**Base Path**: `/api/v1`
+This API follows:
+- **Single Responsibility Principle (SRP)**: Each endpoint has a single, well-defined responsibility.
+- **Resource-oriented design**: Consistent naming and standard patterns.
+- **Unified API with Role-Based Access**: Single API surface with access control via headers.
 
-All endpoints are unified under a single path structure. Access control and behavior are determined by the role claim in the `Authorization` JWT token.
+### Base Path: `/api/v1`
 
-### Knowledge Endpoints
+### Resource Naming Conventions
 
-**Access**: Both `operator` and `client` roles (read-only for clients, full CRUD for operators)
+- Use plural nouns for collection resources: `knowledge`, `card-types`, `accounts`, `cards`
+- Use resource identifiers in paths: `/knowledge/{code}`, `/accounts/{accountId}/cards/{cardId}`
+- Use consistent field naming: camelCase in JSON, snake_case in query parameters
 
-#### `GET /api/v1/knowledge`
-List knowledge items with optional filtering.
+### API Access Control
 
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: client` or `role: operator` claim)
+The API uses a unified path structure with role-based access control via JWT token claims:
 
-**Query Parameters**:
-- `page` (optional, default: 0): Page number (0-indexed)
-- `size` (optional, default: 20, max: 100): Number of items per page
-- `filter` (optional): Filter expression (e.g., `metadata.key = 'value'`)
+**Unified Path Structure**:
+- All endpoints use the same paths regardless of user role.
+- Role is extracted from JWT token claims to determine access permissions.
 
-**Response**: `200 OK`
-```json
-{
-  "content": [
-    {
-      "code": "ST-0000001",
-      "name": "Example",
-      "description": "Description",
-      "metadata": {}
-    }
-  ],
-  "page": {
-    "number": 0,
-    "size": 20,
-    "totalElements": 100,
-    "totalPages": 5
-  }
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `400 Bad Request`: Invalid filter expression or size > 100
-- `500 Internal Server Error`: Server error
-
-#### `GET /api/v1/knowledge/{code}`
-Get a specific knowledge item.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: client` or `role: operator` claim)
-
-**Path Parameters**:
-- `code` (required): Knowledge code identifier
-
-**Response**: `200 OK`
-```json
-{
-  "code": "ST-0000001",
-  "name": "Example",
-  "description": "Description",
-  "metadata": {}
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `404 Not Found`: Knowledge not found
-- `400 Bad Request`: Invalid code format
-
-#### `GET /api/v1/knowledge:export`
-Export all knowledge items to CSV file.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: operator` claim)
-
-**Response**: `200 OK`
-- Content-Type: `text/csv`
-- CSV file with columns: `code`, `name`, `description`, `metadata`
-- All codes are filled in for existing items
-
-**CSV Format** (exported):
-```csv
-code,name,description,metadata:level,metadata:type
-ST-0000001,Example 1,Description 1,A1,vocabulary
-ST-0000002,Example 2,Description 2,A2,phrase
-```
-
-#### `POST /api/v1/knowledge:upload`
-Upload CSV file for batch knowledge import.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: operator` claim)
-- `Content-Type: multipart/form-data`
-
-**Request Body** (multipart/form-data):
-- `file` (required): CSV file with columns: `code` (optional), `name`, `description`, `metadata:*` (optional, any number of metadata columns)
-
-**CSV Format** (for import):
-```csv
-code,name,description,metadata:level,metadata:type
-ST-0000001,Updated Example 1,Updated Description 1,A1,vocabulary
-,New Example 2,New Description 2,A2,phrase
-ST-0000003,Another Updated,Another Description,B1,idiom
-```
-
-**Column Rules**:
-- **Code column**: Optional
-  - **Filled code** (e.g., `ST-0000001`): Identifies existing item for update
-  - **Empty code**: Identifies new item (code will be generated after approval)
-  - Codes are validated if provided (must match format `{PREFIX}-{NUMBER}`)
-- **Metadata columns**: Optional, flat structure with `metadata:` prefix
-  - Any number of metadata columns can be included (e.g., `metadata:level`, `metadata:type`, `metadata:difficulty`)
-  - Values are stored as strings in JSONB metadata object
-  - Example: `metadata:level=A1` becomes `{"level": "A1"}` in database
-
-**Response**: `202 Accepted`
-```json
-{
-  "workflowId": "uuid-string",
-  "workflowExecutionId": "workflow-execution-id",
-  "runId": "run-id",
-  "status": "RUNNING",
-  "startedAt": "2024-01-01T12:00:00Z"
-}
-```
-
-**Note**: Returns workflow execution information. Use `workflowId` to query status later.
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `403 Forbidden`: Token does not have `operator` role claim
-- `400 Bad Request`: Invalid CSV format or missing required columns
-
-**Note**: 
-- Validation and approval are handled by the Temporal workflow automatically
-- Use `GET /api/v1/workflows/{workflowId}/status` to check validation and comparison results
-- Use `POST /api/v1/workflows/{workflowId}/signal` with signal name `approval` to approve/reject changes
-
-### Card Types Endpoints
-
-**Access**: Both `operator` and `client` roles (read-only)
-
-#### `GET /api/v1/card-types`
-List all available card types.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: client` or `role: operator` claim)
-
-**Query Parameters**:
-- `page` (optional, default: 0): Page number (0-indexed)
-- `size` (optional, default: 20, max: 100): Number of items per page
-
-**Response**: `200 OK`
-```json
-{
-  "content": [
-    {
-      "code": "ST-0000001",
-      "name": "word_to_definition",
-      "description": "Card type description"
-    }
-  ],
-  "page": {
-    "number": 0,
-    "size": 20,
-    "totalElements": 5,
-    "totalPages": 1
-  }
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `400 Bad Request`: Invalid size > 100
-
-#### `GET /api/v1/card-types/{code}`
-Get a specific card type.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: client` or `role: operator` claim)
-
-**Path Parameters**:
-- `code` (required): Card type code identifier
-
-**Response**: `200 OK`
-```json
-{
-  "code": "ST-0000001",
-  "name": "word_to_definition",
-  "description": "Card type description"
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `404 Not Found`: Card type not found
-- `400 Bad Request`: Invalid code format
-
-### Account Card Endpoints
-
-**Access**: `client` role (for `/me` endpoints) or `operator` role (for `{accountId}` endpoints)
-
-#### `GET /api/v1/accounts/me/cards`
-List current account's cards with optional filtering.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: client` claim and `sub` claim with account ID)
-
-**Query Parameters**:
-- `card_type_code` (optional): Filter by card type code
-- `status` (optional): Filter by status (`new`, `learning`, `review`, `all`)
-  - `new`: repetitions = 0
-  - `learning`: repetitions > 0 and < 3
-  - `review`: next_review_date <= today
-  - `all`: No status filter (default)
-- `page` (optional, default: 0): Page number (0-indexed)
-- `size` (optional, default: 20, max: 100): Number of items per page
-
-**Response**: `200 OK`
-```json
-{
-  "content": [
-    {
-      "id": 1,
-      "knowledge": { "code": "ST-0000001", "name": "Example", ... },
-      "cardType": { "code": "ST-0000001", "name": "word_to_definition", ... },
-      "easeFactor": 2.5,
-      "intervalDays": 1,
-      "repetitions": 0,
-      "nextReviewDate": "2024-01-01T00:00:00Z",
-      "lastReviewedAt": null
-    }
-  ],
-  "page": {
-    "number": 0,
-    "size": 20,
-    "totalElements": 50,
-    "totalPages": 3
-  }
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `403 Forbidden`: Token does not have `client` role claim
-- `400 Bad Request`: Invalid status value or size > 100
-
-#### `GET /api/v1/accounts/{accountId}/cards`
-List specific account's cards (operator access).
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: operator` claim)
-
-**Path Parameters**:
-- `accountId` (required): Account identifier
-
-**Query Parameters**: Same as `/me/cards` endpoint
-
-**Response**: Same format as `/me/cards`
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `403 Forbidden`: Token does not have `operator` role claim
-- `404 Not Found`: Account not found
-
-#### `GET /api/v1/accounts/me/cards/{cardId}`
-Get a specific card for current account.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: client` claim and `sub` claim with account ID)
-
-**Path Parameters**:
-- `cardId` (required): Card identifier
-
-**Response**: `200 OK`
-```json
-{
-  "id": 1,
-  "knowledge": { "code": "ST-0000001", "name": "Example", ... },
-  "cardType": { "code": "ST-0000001", "name": "word_to_definition", ... },
-  "easeFactor": 2.5,
-  "intervalDays": 1,
-  "repetitions": 0,
-  "nextReviewDate": "2024-01-01T00:00:00Z",
-  "lastReviewedAt": null
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `403 Forbidden`: Token does not have `client` role claim
-- `404 Not Found`: Card not found
-- `403 Forbidden`: Card does not belong to current account (account ID from token `sub` claim)
-
-#### `GET /api/v1/accounts/me/cards:due`
-Get cards due for review for current account.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: client` claim and `sub` claim with account ID)
-
-**Query Parameters**:
-- `card_type_code` (optional): Filter by specific card type code
-- `page` (optional, default: 0): Page number (0-indexed)
-- `size` (optional, default: 20, max: 100): Maximum number of cards to return
-
-**Response**: `200 OK`
-```json
-{
-  "content": [
-    {
-      "id": 1,
-      "knowledge": { "code": "ST-0000001", "name": "Example", ... },
-      "cardType": { "code": "ST-0000001", "name": "word_to_definition", ... },
-      "front": "Rendered front content",
-      "back": "Rendered back content",
-      "easeFactor": 2.5,
-      "intervalDays": 1,
-      "repetitions": 0,
-      "nextReviewDate": "2024-01-01T00:00:00Z"
-    }
-  ],
-  "page": {
-    "number": 0,
-    "size": 20,
-    "totalElements": 10,
-    "totalPages": 1
-  }
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `403 Forbidden`: Token does not have `client` role claim
-- `400 Bad Request`: Invalid size > 100
-
-#### `POST /api/v1/accounts/me/cards:initialize` (Internal/Admin Use)
-Initialize cards for current account. This endpoint is typically called automatically during account signup, but can also be used manually if needed.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: client` claim and `sub` claim with account ID)
-
-**Request Body**:
-```json
-{
-  "cardTypeCodes": ["ST-0000001", "ST-0000002"]
-}
-```
-- `cardTypeCodes` (optional): If not provided, initializes cards for all card types
-
-**Response**: `200 OK`
-```json
-{
-  "created": 50,
-  "skipped": 10
-}
-```
-
-**Behavior**: Creates account_cards for all knowledge items and specified card types (or all card types if not specified) that don't already exist for the account. Called automatically during signup.
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `403 Forbidden`: Token does not have `client` role claim
-- `400 Bad Request`: Invalid card type codes
-
-#### `POST /api/v1/accounts/me/cards/{cardId}:review`
-Submit a review result and update SM-2 algorithm state.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: client` claim and `sub` claim with account ID)
-
-**Path Parameters**:
-- `cardId` (required): Card identifier
-
-**Request Body**:
-```json
-{
-  "quality": 3
-}
-```
-
-**Quality Values**:
-- `0` = again (complete blackout)
-- `1` = hard
-- `2` = good
-- `3` = easy
-- `4` = very easy
-- `5` = perfect
-
-**Response**: `200 OK`
-```json
-{
-  "id": 1,
-  "knowledge": { "code": "ST-0000001", ... },
-  "cardType": { "code": "ST-0000001", ... },
-  "easeFactor": 2.6,
-  "intervalDays": 2,
-  "repetitions": 1,
-  "nextReviewDate": "2024-01-03T00:00:00Z",
-  "lastReviewedAt": "2024-01-01T12:00:00Z"
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Missing or invalid token
-- `403 Forbidden`: Token does not have `client` role claim
-- `400 Bad Request`: Invalid quality value (not 0-5)
-- `404 Not Found`: Card not found
-- `403 Forbidden`: Card does not belong to current account (account ID from token `sub` claim)
-
-### Statistics Endpoints
-
-#### `GET /api/v1/accounts/me/stats`
-Get learning statistics for current account.
-
-**Headers**:
-- `Authorization: Bearer <token>` (required, token must have `role: client` claim and `sub` claim with account ID)
-
-**Response**: `200 OK`
-```json
-{
-  "totalCards": 100,
-  "newCards": 20,
-  "learningCards": 30,
-  "dueToday": 15,
-  "byCardType": {
-    "ST-0000001": 50,
-    "ST-0000002": 50
-  }
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Not authenticated
-
-### Error Responses
-
-All endpoints follow standard HTTP status codes and Google API error format:
-
-**Standard HTTP Status Codes**:
-- `200 OK`: Success
-- `400 Bad Request`: Invalid request parameters or body
-- `403 Forbidden`: Resource exists but access denied
-- `404 Not Found`: Resource not found
-- `500 Internal Server Error`: Server error
-- `503 Service Unavailable`: Service temporarily unavailable
-
-**Error Response Format** (following Google API Design Guidelines):
-```json
-{
-  "error": {
-    "code": 404,
-    "message": "Card not found",
-    "status": "NOT_FOUND",
-    "details": [
-      {
-        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
-        "reason": "CARD_NOT_FOUND",
-        "domain": "english-learning.api",
-        "metadata": {
-          "cardId": "123",
-          "accountId": "456"
-        }
-      }
-    ]
-  }
-}
-```
-
-**Simplified Error Format** (for MVP):
-```json
-{
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "Card not found",
-    "details": {
-      "resource": "card",
-      "resourceId": "123"
-    }
-  }
-}
-```
+**Token-Based Role Access Control**:
+- `Authorization: Bearer <token>` header contains JWT with role claim.
+- Role values:
+  - `operator`: Internal operators managing the system (full CRUD access).
+  - `client`: End-user accounts using the learning system (read/action access).
 
 ---
 
@@ -1322,8 +838,8 @@ All endpoints follow standard HTTP status codes and Google API error format:
 
 ### Components
 
-#### 0. **ReactivePaginationHelper** (Utility Service)
-Reusable utility service that encapsulates R2DBC pagination pattern. Provides `paginate()` method that combines `Flux<T>` data query and `Mono<Long>` count query into `Mono<Page<T>>`. Used by all services that need pagination to eliminate boilerplate code.
+#### 0. **PaginationHelper** (Utility Service)
+Reusable utility service that encapsulates pagination pattern. Provides method that combines data query and count query into a Page result. Used by all services that need pagination to eliminate boilerplate code.
 
 #### 1. **Sm2Algorithm** (Object)
 Implements the SM-2 spaced repetition algorithm.
@@ -1342,30 +858,30 @@ Manages template operations.
 - `getAllTemplates()`: List all templates (usage determined by relationships)
 
 #### 3. **CardTemplateService**
-Renders card templates with knowledge data using Qute reactive template engine.
-- `renderByRole(cardType, knowledge, role)`: Generates content using Qute template for specified role (fully reactive)
+Renders card templates with knowledge data using a template engine.
+- `renderByRole(cardType, knowledge, role)`: Generates content using template for specified role
 - Loads templates from database via TemplateService and card_type_template_rel
-- Uses Qute syntax: `{name}`, `{description}`, `{metadata.level}`, `{#for item in relatedKnowledge}{item.name}{/for}` (iterates over referenced knowledge entities via knowledge_rel)
+- Uses template syntax: `{name}`, `{description}`, `{metadata.level}`, `{#for item in relatedKnowledge}{item.name}{/for}` (iterates over referenced knowledge entities via knowledge_rel)
 - Metadata can be accessed via dot notation (e.g., `{metadata.level}` or `{metadata.nested.key}`)
-- Template format field value is `qute` for Qute templates
+- Template format field value specifies the engine used.
 
 #### 4. **KnowledgeService**
 Manages knowledge operations.
-- `getKnowledge(pageable: Pageable, filter?)`: List knowledge items with pagination (returns `Mono<Page<Knowledge>>`)
-- `getKnowledgeByCode(code)`: Get single knowledge item (returns `Mono<Knowledge>`)
+- `getKnowledge(pageable, filter?)`: List knowledge items with pagination
+- `getKnowledgeByCode(code)`: Get single knowledge item
 
 #### 4.1. **KnowledgeImportService**
 Manages CSV-based batch import/export of knowledge items. Export is a simple operation, while import uses Temporal workflows.
-- `exportAllKnowledge()`: Export all knowledge items to CSV file (returns `Flux<ByteArray>` or `Mono<Resource>`) - Simple operation
-- `uploadCsv(file: MultipartFile, operatorId: String)`: Upload CSV file and start Temporal workflow (returns `Mono<WorkflowExecution>`)
+- `exportAllKnowledge()`: Export all knowledge items to CSV file - Simple operation
+- `uploadCsv(file, operatorId)`: Upload CSV file and start Temporal workflow
 
 #### 4.1.1. **WorkflowService** (Generic)
 Generic service for managing all Temporal workflows:
-- `getWorkflowStatus(workflowId: String)`: Get workflow status using Temporal's `DescribeWorkflowExecution` API (returns `Mono<WorkflowStatus>`)
+- `getWorkflowStatus(workflowId)`: Get workflow status using Temporal's API
   - Returns: execution status, start/close times, history length, query results, workflow result, failure details
-- `sendSignal(workflowId: String, signalName: String, signalData: Any)`: Send signal to workflow (returns `Mono<Void>`)
-- `listWorkflows(workflowType: String?, status: String?, pageable: Pageable)`: List workflows with filtering (returns `Mono<Page<WorkflowSummary>>`)
-- `cancelWorkflow(workflowId: String)`: Cancel running workflow (returns `Mono<Void>`)
+- `sendSignal(workflowId, signalName, signalData)`: Send signal to workflow
+- `listWorkflows(workflowType, status, pageable)`: List workflows with filtering
+- `cancelWorkflow(workflowId)`: Cancel running workflow
 
 #### 4.2. **KnowledgeImportWorkflow** (Temporal Workflow)
 Temporal workflow for knowledge import with multiple activities:
@@ -1580,82 +1096,7 @@ Calculates account statistics.
 
 ---
 
-## Part 2.9: Implementation Details
 
-### Repository Layer
-All repositories extend `PanacheRepositoryBase` for reactive database access with Hibernate Reactive:
-
-**Standard Repositories**:
-- `KnowledgeRepository`: CRUD operations + `findAll(Pageable)` for pagination
-- `KnowledgeRelRepository`: CRUD + `findBySourceKnowledgeCode()`, `findByTargetKnowledgeCode()`
-- `TranslationKeyRepository`: CRUD + `findByKey()`
-- `TranslationMessageRepository`: CRUD + `findByTranslationKeyCode()`, `findByTranslationKeyCodeAndLocaleCode()`, `findByLocaleCode()`
-- `TemplateRepository`: CRUD + `findByName()`
-- `CardTypeRepository`: CRUD + `findByName()`
-- `CardTypeTemplateRelRepository`: CRUD + `findByCardTypeCode()`, `findByTemplateCode()`, `findByCardTypeCodeAndRole()`
-- `AccountRepository`: CRUD + `findByUsername()`
-- `AccountCardRepository`: CRUD + custom queries for due cards, counts by status, etc.
-- `ReviewHistoryRepository`: CRUD + `findByAccountCardId()`
-
-**Panache Pagination Notes**:
-- Panache supports pagination through `PanacheQuery` interface
-- Repository methods return `Uni<List<T>>` for reactive operations
-- Use Panache's built-in `page()` method for pagination support
-
-#### **Panache Pagination Pattern**
-Panache provides built-in pagination support through the `PanacheQuery` interface:
-
-**Usage in Repositories**:
-```kotlin
-@ApplicationScoped
-class KnowledgeRepository : PanacheRepositoryBase<Knowledge, String> {
-    suspend fun findAllPaginated(pageIndex: Int, pageSize: Int): List<Knowledge> {
-        return findAll()
-            .page(pageIndex, pageSize)
-            .list<Knowledge>()
-            .awaitSuspending()
-    }
-
-    suspend fun countAll(): Long {
-        return count().awaitSuspending()
-    }
-}
-```
-
-**Usage in Services**:
-```kotlin
-suspend fun findAll(pageIndex: Int, pageSize: Int): Page<Knowledge> {
-    val items = repository.findAllPaginated(pageIndex, pageSize)
-    val total = repository.countAll()
-    return Page(items, pageIndex, pageSize, total)
-}
-```
-
-Panache's built-in pagination eliminates boilerplate and provides a clean, efficient pattern for database queries.
-
-### Entity Models
-All entities use JPA/Hibernate annotations:
-- `@Entity`: Marks a class as a JPA entity
-- `@Table`: Maps to database table
-- `@Id`: Primary key
-- `@GeneratedValue`: Auto-generation strategy for primary keys
-- `@Column`: Maps to database column (for snake_case conversion)
-
-### DTOs
-Data Transfer Objects for API responses:
-- `KnowledgeDto`: Knowledge data (code, name, description, metadata)
-- `KnowledgeRelDto`: Junction table data (sourceKnowledgeCode, targetKnowledgeCode)
-- `TranslationKeyDto`: Translation key data (code, key)
-- `TranslationMessageDto`: Translation message data (code, translationKeyCode, localeCode, message)
-- `TemplateDto`: Template data (code, name, description, content)
-- `CardTypeDto`: Card type data (may include templates array with roles)
-- `CardTypeTemplateRelDto`: Junction table data (cardTypeCode, templateCode, role)
-- `AccountCardDto`: Account card with rendered front/back
-- `StatsDto`: Statistics data
-- Request/Response DTOs for each endpoint
-
-### Configuration
-- `application.properties`: Database connection, Hibernate Reactive, Flyway settings
 
 ---
 
@@ -1669,62 +1110,43 @@ Data Transfer Objects for API responses:
 ### Technical Decisions
 
 #### Entity Relationship Pattern
-- **Design Decision**: Use unidirectional foreign keys WITHOUT JPA relationship annotations (`@OneToMany`, `@ManyToOne`, etc.)
-- **Implementation**: Foreign keys are simple `Long` or `String` fields, not JPA relationship objects
+- **Design Decision**: Use unidirectional foreign keys WITHOUT complex ORM relationship mapping.
+- **Implementation**: Foreign keys are simple ID fields.
 - **Rationale**:
-  1. **Reactive Compatibility**: Quarkus Reactive Panache has limited lazy loading support; avoids `LazyInitializationException`
-  2. **Explicit Control**: Developers explicitly query for related entities, preventing hidden N+1 queries
-  3. **Simpler Entities**: Plain Kotlin classes without JPA proxy objects or bidirectional synchronization
-  4. **Performance**: Batch loading via `findByCodeIn()` methods, manual join optimization
-  5. **Serialization**: No circular references, no need for `@JsonIgnore` or complex DTOs
-  6. **Microservice-Ready**: Clear entity boundaries, easier to extract to separate services
+  1. **Explicit Control**: Developers explicitly query for related entities, preventing hidden N+1 queries.
+  2. **Simpler Entities**: Plain classes without complex proxy objects or bidirectional synchronization.
+  3. **Performance**: Batch loading via IDs, manual join optimization.
+  4. **Serialization**: No circular references.
+  5. **Microservice-Ready**: Clear entity boundaries.
 - **Example**:
-  ```kotlin
-  class AccountCard(
-      val accountId: Long,        // Simple field, not @ManyToOne
-      val knowledgeCode: String,  // Simple field, not @ManyToOne
+  ```
+  class AccountCard {
+      accountId: Long        // Simple field
+      knowledgeCode: String  // Simple field
       ...
-  )
-  ```
-- **Relationship Loading Pattern**:
-  ```kotlin
-  // Explicit loading
-  val cards = accountCardRepository.findByAccountId(accountId)
-
-  // Batch loading to prevent N+1
-  val codes = cards.map { it.knowledgeCode }.distinct()
-  val knowledgeMap = knowledgeRepository.findByCodeIn(codes).associateBy { it.code }
-  ```
-- **Database Integrity**: Foreign key constraints enforced at database level via DDL
-- **Use When**: Reactive apps, REST APIs, microservices, explicit data loading preferred
-- **Avoid When**: Traditional blocking JPA, heavy cascade operations, automatic bidirectional navigation needed
-
-#### JPA Entity Design
-- **Design Decision**: Use regular classes instead of data classes for JPA entities
-- **Implementation**: All entities extend from regular `class`, not `data class`
-- **Rationale**:
-  1. **Stable Identity**: `equals()` and `hashCode()` based on business keys (primary key or natural key), not all fields
-  2. **Mutable State**: Entity fields can change (e.g., `updatedAt`), but equality should remain stable
-  3. **No Copy Method**: Data class `copy()` doesn't apply to JPA entities (entities are mutable, not immutable)
-  4. **Collections Safety**: Entities in collections won't break when state changes
-- **Example**:
-  ```kotlin
-  class Knowledge(...) {
-      override fun equals(other: Any?): Boolean = other is Knowledge && code == other.code
-      override fun hashCode(): Int = code.hashCode()
   }
   ```
-- **Business Key Patterns**:
-  - Entities with natural String keys (code): Compare by `code`
-  - Entities with unique business keys: Compare by unique field (e.g., `username`)
-  - Entities with composite keys: Compare by combination of fields
-  - Entities with generated IDs: Compare by natural/composite business key, not ID
+- **Relationship Loading Pattern**:
+  ```
+  // Explicit loading
+  cards = repository.findByAccountId(accountId)
+
+  // Batch loading to prevent N+1
+  codes = cards.map { it.knowledgeCode }.distinct()
+  knowledgeMap = knowledgeRepository.findByCodeIn(codes)
+  ```
+- **Database Integrity**: Foreign key constraints enforced at database level via DDL.
+
+#### Entity Design
+- **Design Decision**: Use standard classes for entities.
+- **Rationale**:
+  1. **Stable Identity**: Equality based on business keys (primary key or natural key).
+  2. **Mutable State**: Entity fields can change, but equality should remain stable.
 
 #### Other Technical Decisions
-- All operations are reactive (Mutiny Uni/Multi with Kotlin coroutines) for non-blocking I/O
-- SM-2 algorithm implemented as pure function object
-- Card templates use Qute syntax with `{variable}` expressions
-- Template format field value is `qute` for Qute templates
-- Database uses snake_case, Kotlin uses camelCase (handled by @Column)
-- Using Kotlin coroutines with `suspend` functions for cleaner reactive code
+- All operations are asynchronous/non-blocking for I/O.
+- SM-2 algorithm implemented as pure function object.
+- Card templates use template syntax with `{variable}` expressions.
+- Database uses snake_case, Application uses camelCase.
+--- End of content ---
 
