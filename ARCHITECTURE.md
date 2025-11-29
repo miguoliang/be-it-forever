@@ -121,12 +121,12 @@ Implementation details for content management:
 Implementation details for content review and approval:
 
 1.  **Change Request Review**:
-    - **Endpoint**: `GET /api/v1/operator/change-requests`
+    - **Endpoint**: `GET /api/v1/change-requests`
     - **Filtering**: By status (`PENDING`, `APPROVED`, `REJECTED`).
     - **Auth**: Protected by `require_manager_role` middleware.
 
 2.  **Request Approval/Rejection**:
-    - **Endpoint**: `POST /api/v1/operator/change-requests/{id}/approval`
+    - **Endpoint**: `POST /api/v1/change-requests/{id}/approval`
         - **Body**: `{ "approved": boolean, "reason": string }`
     - **Logic**:
         - **Approve**: Applies the JSONB payload to the live `knowledge` table (Insert/Update/Delete). Updates request status to `APPROVED`.
@@ -178,7 +178,7 @@ Implementation details for content review and approval:
 - **Role-Based Access Control (RBAC)**:
     - **`client`**: Access to `/accounts/me/*` and read-only `/knowledge`.
     - **`operator`**: Can SUBMIT change requests via `/knowledge` (Write). Cannot modify live DB directly.
-    - **`operator_manager`**: Full access to `/operator/change-requests` to approve requests. Can also act as Operator.
+    - **`operator_manager`**: Full access to `/change-requests` to approve requests. Can also act as Operator.
     - *Note*: Operators implicitly have Client permissions for dogfooding/testing.
 
 ---
