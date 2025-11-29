@@ -37,10 +37,15 @@ The database uses PostgreSQL and strictly enforces data integrity via foreign ke
     - `reviewer_id`: Account ID of Manager (nullable).
 
 #### ER Diagram (Conceptual)
-`Account` 1 -- * `AccountCard` * -- 1 `Knowledge`
-`AccountCard` * -- 1 `CardType`
-`AccountCard` 1 -- * `ReviewHistory`
-`Account` (Operator) 1 -- * `ChangeRequest` * -- 1 `Account` (Manager)
+```mermaid
+erDiagram
+    Account ||--o{ AccountCard : "tracks progress for"
+    Knowledge ||--o{ AccountCard : "is subject of"
+    CardType ||--o{ AccountCard : "defines format of"
+    AccountCard ||--o{ ReviewHistory : "logs history"
+    Account ||--o{ ChangeRequest : "submits (Operator)"
+    Account ||--o{ ChangeRequest : "reviews (Manager)"
+```
 
 ### 2.2 Data Types & Standards
 - **Codes**: All primary business entities use the `{PREFIX}-{NUMBER}` format.
