@@ -96,8 +96,18 @@ The database uses PostgreSQL and strictly enforces data integrity via foreign ke
 ## 5. Security & Access Control
 
 ### 5.1 Authentication
-- **Mechanism**: JWT (JSON Web Tokens).
-- **Identity**: `sub` claim = Account ID.
+- **Mechanism**: JWT (JSON Web Tokens) signed with HS256.
+- **Identity**: `sub` claim contains the Account ID (i64).
+- **Roles**: `role` claim contains either `client` or `operator`.
+- **Flows**:
+    - **POST /api/v1/auth/login**:
+        - Accepts: `username` (password ignored in dev mode).
+        - Action: Finds or Creates `Account` record.
+        - Logic: If username is "operator" or "admin", assigns `operator` role. Else `client`.
+        - Returns: JWT Token + User Info.
+    - **POST /api/v1/auth/signup**:
+        - Aliased to login for development simplicity (auto-creation).
+        - Triggers: Asynchronous card initialization for new users.
 
 ### 5.2 Authorization
 - **Role-Based Access Control (RBAC)**:
