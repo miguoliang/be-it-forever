@@ -35,6 +35,7 @@ impl KnowledgeService {
             .map_err(|_| AppError::NotFound(format!("Knowledge with code {} not found", code)))
     }
 
+    #[allow(dead_code)]
     pub async fn get_related_knowledge(
         pool: &DbPool,
         knowledge_code: &str,

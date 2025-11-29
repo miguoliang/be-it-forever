@@ -14,6 +14,7 @@ pub struct Knowledge {
     pub updated_by: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct KnowledgeRel {
     pub id: i64,
@@ -25,6 +26,7 @@ pub struct KnowledgeRel {
     pub updated_by: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Template {
     pub code: String,
@@ -49,6 +51,7 @@ pub struct CardType {
     pub updated_by: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct CardTypeTemplateRel {
     pub id: i64,
@@ -61,6 +64,7 @@ pub struct CardTypeTemplateRel {
     pub updated_by: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Account {
     pub id: i64,
@@ -88,6 +92,7 @@ pub struct AccountCard {
     pub updated_by: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ReviewHistory {
     pub id: i64,
@@ -128,6 +133,7 @@ impl<T> Page<T> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountCardWithContent {
     #[serde(flatten)]

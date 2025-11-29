@@ -12,6 +12,7 @@ pub async fn create_pool(database_url: &str) -> anyhow::Result<DbPool> {
 }
 
 /// Generate code with prefix (ST or CS)
+#[allow(dead_code)]
 pub async fn generate_code(pool: &DbPool, prefix: &str) -> anyhow::Result<String> {
     if prefix != "ST" && prefix != "CS" {
         anyhow::bail!("Invalid prefix: {}. Must be ST or CS", prefix);

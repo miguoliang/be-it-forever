@@ -13,6 +13,7 @@ pub mod stats;
 
 pub struct AppState {
     pub db: DbPool,
+    #[allow(dead_code)]
     pub config: Config,
 }
 

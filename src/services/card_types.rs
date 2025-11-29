@@ -32,6 +32,7 @@ impl CardTypeService {
             .map_err(|_| AppError::NotFound(format!("Card type with code {} not found", code)))
     }
 
+    #[allow(dead_code)]
     pub async fn get_templates_for_card_type(
         pool: &DbPool,
         card_type_code: &str,
