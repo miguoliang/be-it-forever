@@ -86,6 +86,23 @@ Implementation details for key learner activities:
     - **Endpoint**: `GET /api/v1/accounts/me/cards`
     - **Filtering**: Supports filters by `card_type_code` and pagination.
 
+### 3.4 Operator Workflows
+Implementation details for content management:
+
+1.  **Knowledge Management (CRUD)**:
+    - **Endpoints**: `POST`, `PUT`, `DELETE` on `/api/v1/knowledge`.
+    - **Auth**: Protected by `require_operator_role` middleware.
+    - **Code Generation**:
+        - Backend generates immutable codes (`ST-` or `CS-`) via `db::generate_code`.
+        - Uses Postgres `SEQUENCE` for atomicity.
+    - **Creation Flow**:
+        - Frontend: Opens Drawer/Sheet with "Type" selection.
+        - Backend: Generates code based on type, inserts into DB.
+
+2.  **Batch Import/Export (Planned)**:
+    - **Export**: Streamed CSV response from `knowledge` table.
+    - **Import**: Temporal Workflow to handle validation, diffing, and application.
+
 ---
 
 ## 4. Key Design Patterns
