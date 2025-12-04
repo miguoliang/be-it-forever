@@ -6,7 +6,10 @@ interface CardBackProps {
 
 export function CardBack({ knowledge }: CardBackProps) {
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center backface-hidden rotate-y-180">
+    <div 
+      className="absolute inset-0 flex flex-col items-center justify-center backface-hidden"
+      style={{ transform: "rotateY(180deg)" }}
+    >
       <div className="flex items-center gap-6 mb-8">
         <p className="text-7xl font-bold text-indigo-600 dark:text-indigo-400 text-center">
           {knowledge.description}

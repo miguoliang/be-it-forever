@@ -26,19 +26,15 @@ export function StudyCard({
       onTouchEnd={onTouchEnd}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-12 min-h-96 flex flex-col justify-center items-center cursor-pointer select-none transition-all duration-500 preserve-3d"
+        className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-12 min-h-96 flex flex-col justify-center items-center cursor-pointer select-none transition-all duration-500 preserve-3d relative"
         style={{
           transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
           transformStyle: "preserve-3d",
         }}
         onClick={onFlip}
       >
-        <div className={flipped ? "opacity-0" : ""}>
-          <CardFront knowledge={card.knowledge} onSpeak={onSpeak} />
-        </div>
-        <div className={!flipped ? "opacity-0" : ""}>
-          <CardBack knowledge={card.knowledge} />
-        </div>
+        <CardFront knowledge={card.knowledge} onSpeak={onSpeak} />
+        <CardBack knowledge={card.knowledge} />
       </div>
     </div>
   );
