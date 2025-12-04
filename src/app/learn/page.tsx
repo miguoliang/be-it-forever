@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useDueCount } from "./hooks/useDueCount";
 import { useCards } from "./hooks/useCards";
 import { useCardFlip } from "./hooks/useCardFlip";
 import { useSpeech } from "./hooks/useSpeech";
@@ -9,7 +8,6 @@ import { useTouchSwipe } from "./hooks/useTouchSwipe";
 import { useCardReview } from "./hooks/useCardReview";
 import { LoadingState } from "./components/LoadingState";
 import { EmptyState } from "./components/EmptyState";
-import { DueCountBadge } from "./components/DueCountBadge";
 import { ProgressIndicator } from "./components/ProgressIndicator";
 import { StudyCard } from "./components/StudyCard";
 import { RatingButtons } from "./components/RatingButtons";
@@ -21,7 +19,6 @@ export default function Learn() {
   const { flipped, toggleFlip, resetFlip } = useCardFlip();
   const { speak } = useSpeech();
   const { handleTouchStart, handleTouchEnd } = useTouchSwipe(toggleFlip);
-  const dueCount = useDueCount();
 
   const { handleRate } = useCardReview({
     cards,
@@ -38,8 +35,6 @@ export default function Learn() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
-      <DueCountBadge count={dueCount} />
-
       <ProgressIndicator current={currentIndex + 1} total={cards.length} />
 
       <StudyCard
