@@ -3,11 +3,13 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabaseClient'
+import { useRouter } from 'next/navigation'
 
 interface Knowledge {
   code: string
   name: string
   description: string
+  metadata: any
 }
 
 interface Card {
@@ -22,15 +24,18 @@ export default function Learn() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [loading, setLoading] = useState(true)
-
+  const router = useRouter()
   const supabase = createClient()
 
+  // 加载今日 due 卡片
   const loadCards = async () => {
     const res = await fetch('/api/cards/due')
-    if (res.ok) {
-      const data = await res.json()
-      setCards(data)
+    if (!res.ok) {
+      if (res.status === 401) router.push('/')
+      return
     }
+    const data = await res.json()
+    setCards(data)
     setLoading(false)
   }
 
@@ -38,6 +43,18 @@ export default function Learn() {
     loadCards()
   }, [])
 
+  // 发音
+  const speak = (text: string, lang: 'en-US' | 'en-GB' = 'en-US') => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+      const utter = new SpeechSynthesisUtterance(text)
+      utter.lang = lang
+      utter.rate = 0.8
+      window.speechSynthesis.speak(utter)
+    }
+  }
+
+  // 评分
   const handleRate = async (quality: number) => {
     const card = cards[currentIndex]
     await fetch(`/api/cards/${card.id}/review`, {
@@ -46,9 +63,8 @@ export default function Learn() {
       body: JSON.stringify({ quality }),
     })
 
-    // 自动下一张
     if (currentIndex < cards.length - 1) {
-      setCurrentIndex(currentIndex + 1)
+      setCurrentIndex(i => i + 1)
       setFlipped(false)
     } else {
       setCards([])
@@ -56,62 +72,121 @@ export default function Learn() {
     }
   }
 
-  if (loading) return <div className="p-10 text-center">加载中...</div>
-  if (cards.length === 0) return <div className="p-10 text-center text-3xl">今日复习完成！明天再来！</div>
+  // 触摸滑动翻牌
+  let touchStartX = 0
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX = e.touches[0].clientX
+  }
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEndX = e.changedTouches[0].clientX
+    if (Math.abs(touchEndX - touchStartX) > 50) {
+      setFlipped(f => !f)
+    }
+  }
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-3xl">加载中…</div>
+  if (cards.length === 0)
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 text-4xl font-bold">
+        今日复习完成！
+        <p className="text-xl mt-4 text-gray-600 dark:text-gray-400">明天再来哦</p>
+      </div>
+    )
 
   const current = cards[currentIndex]
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6">
-      <div className="max-w-2xl w-full">
-        <div className="text-center mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">今日复习</h1>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 mt-2">
-            {currentIndex + 1} / {cards.length} 张
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
+      {/* 进度 */}
+      <div className="w-full max-w-2xl text-center mb-8">
+        <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">
+          {currentIndex + 1} / {cards.length}
+        </p>
+      </div>
 
+      {/* 卡片 */}
+      <div
+        className="relative w-full max-w-2xl"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <div
-          className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-12 md:p-16 min-h-[300px] sm:min-h-96 flex flex-col justify-center items-center cursor-pointer transition-all active:scale-95 sm:hover:scale-105 touch-manipulation"
-          onClick={() => setFlipped(true)}
+          className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-12 min-h-96 flex flex-col justify-center items-center cursor-pointer select-none transition-all duration-500 preserve-3d"
+          style={{ transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)', transformStyle: 'preserve-3d' }}
+          onClick={() => setFlipped(f => !f)}
         >
-          {flipped ? (
-            <div className="text-center animate-fadeIn w-full">
-              <p className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-indigo-600 mb-4 sm:mb-8 break-words px-2">
+          {/* 正面 */}
+          <div className={`absolute inset-0 flex flex-col items-center justify-center backface-hidden ${flipped ? 'opacity-0' : ''}`}>
+            <h2 className="text-8xl font-bold text-gray-800 dark:text-white mb-8">{current.knowledge.name}</h2>
+
+            {(current.knowledge.metadata as any)?.phonetic && (
+              <p className="text-4xl text-indigo-600 dark:text-indigo-400 font-medium mb-8">
+                {(current.knowledge.metadata as any).phonetic}
+              </p>
+            )}
+
+            {/* Speaker buttons under the English vocabulary */}
+            <div className="flex items-center justify-center gap-4 mb-8">
+              <button
+                onClick={(e) => { e.stopPropagation(); speak(current.knowledge.name, 'en-US') }}
+                className="px-4 md:px-6 py-2 md:py-3 rounded-lg bg-indigo-100 dark:bg-indigo-900 hover:scale-110 transition text-sm md:text-base font-medium"
+              >
+                US Speaker
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); speak(current.knowledge.name, 'en-GB') }}
+                className="px-4 md:px-6 py-2 md:py-3 rounded-lg bg-green-100 dark:bg-green-900 hover:scale-110 transition text-sm md:text-base font-medium"
+              >
+                UK Speaker
+              </button>
+            </div>
+
+            <p className="text-2xl text-gray-500 dark:text-gray-400">点击或滑动显示答案</p>
+          </div>
+
+          {/* 背面 */}
+          <div className={`absolute inset-0 flex flex-col items-center justify-center backface-hidden rotate-y-180 ${!flipped ? 'opacity-0' : ''}`}>
+            <div className="flex items-center gap-6 mb-8">
+              <p className="text-7xl font-bold text-indigo-600 dark:text-indigo-400 text-center">
                 {current.knowledge.description}
               </p>
-              <p className="text-sm sm:text-base text-gray-500">请为这张卡片评分</p>
             </div>
-          ) : (
-            <div className="text-center w-full">
-              <p className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-800 mb-4 sm:mb-8 break-words px-2">
-                {current.knowledge.name}
+
+            {(current.knowledge.metadata as any)?.phonetic && (
+              <p className="text-4xl text-indigo-600 dark:text-indigo-400 font-medium mb-8">
+                {(current.knowledge.metadata as any).phonetic}
               </p>
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-500">点击显示答案</p>
-            </div>
-          )}
-        </div>
+            )}
 
-        {flipped && (
-          <div className="mt-6 sm:mt-12 grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-            {[0,1,2,3,4,5].map(q => (
-              <button
-                key={q}
-                onClick={() => handleRate(q)}
-                className={`py-3 sm:py-4 md:py-6 text-sm sm:text-lg md:text-xl lg:text-2xl font-bold rounded-lg sm:rounded-xl transition-all active:scale-95 sm:hover:scale-110 touch-manipulation min-h-[48px] sm:min-h-[60px] ${
-                  q < 3 ? 'bg-red-500 active:bg-red-600 sm:hover:bg-red-600' : q < 5 ? 'bg-yellow-500 active:bg-yellow-600 sm:hover:bg-yellow-600' : 'bg-green-500 active:bg-green-600 sm:hover:bg-green-600'
-                } text-white shadow-lg`}
-              >
-                {q === 0 ? '完全忘记' : q === 5 ? '完美记住' : q}
-              </button>
-            ))}
+            <p className="text-xl text-gray-500 dark:text-gray-400">请为这张卡片评分</p>
           </div>
-        )}
-
-        <div className="mt-4 sm:mt-8 text-center text-gray-500 text-xs sm:text-sm">
-          {current.knowledge.code}
         </div>
       </div>
+
+      {/* 评分按钮（只在翻牌后显示） */}
+      {flipped && (
+        <div className="mt-12 grid grid-cols-3 gap-4 w-full max-w-2xl">
+          {[0, 1, 2, 3, 4, 5].map(q => (
+            <button
+              key={q}
+              onClick={() => handleRate(q)}
+              className={`py-8 text-4xl font-bold rounded-2xl transition transform hover:scale-110 ${
+                q < 3 ? 'bg-red-500 hover:bg-red-600' :
+                q < 5 ? 'bg-yellow-500 hover:bg-yellow-600' :
+                'bg-green-500 hover:bg-green-600'
+              } text-white shadow-xl`}
+            >
+              {q === 0 ? '完全忘记' : q === 5 ? '完美' : q}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <style jsx global>{`
+        .preserve-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+      `}</style>
     </div>
   )
 }
