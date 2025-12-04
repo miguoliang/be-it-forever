@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Next.js environment variables
+  NODE_VERSION = "20"
+  # Omit NEXT_PUBLIC_SUPABASE_ANON_KEY from secrets scanning
+  # This is safe to expose as it's protected by Supabase Row Level Security (RLS)
+  # NEXT_PUBLIC_* variables are intentionally exposed to client-side bundle in Next.js
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+
