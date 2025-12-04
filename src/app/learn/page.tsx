@@ -62,7 +62,7 @@ export default function Learn() {
   const current = cards[currentIndex]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
       <div className="max-w-2xl w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800">今日复习</h1>
