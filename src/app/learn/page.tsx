@@ -1,15 +1,19 @@
 // src/app/learn/page.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabaseClient'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+
+interface KnowledgeMetadata {
+  phonetic?: string
+  [key: string]: unknown
+}
 
 interface Knowledge {
   code: string
   name: string
   description: string
-  metadata: any
+  metadata: KnowledgeMetadata
 }
 
 interface Card {
@@ -25,23 +29,31 @@ export default function Learn() {
   const [flipped, setFlipped] = useState(false)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const supabase = createClient()
-
-  // 加载今日 due 卡片
-  const loadCards = async () => {
-    const res = await fetch('/api/cards/due')
-    if (!res.ok) {
-      if (res.status === 401) router.push('/')
-      return
-    }
-    const data = await res.json()
-    setCards(data)
-    setLoading(false)
-  }
 
   useEffect(() => {
+    let isMounted = true
+
+    const loadCards = async () => {
+      const res = await fetch('/api/cards/due')
+      if (!res.ok) {
+        if (res.status === 401 && isMounted) {
+          router.push('/')
+        }
+        return
+      }
+      const data = await res.json()
+      if (isMounted) {
+        setCards(data)
+        setLoading(false)
+      }
+    }
+
     loadCards()
-  }, [])
+
+    return () => {
+      isMounted = false
+    }
+  }, [router])
 
   // 发音
   const speak = (text: string, lang: 'en-US' | 'en-GB' = 'en-US') => {
@@ -73,13 +85,13 @@ export default function Learn() {
   }
 
   // 触摸滑动翻牌
-  let touchStartX = 0
+  const touchStartX = useRef(0)
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX = e.touches[0].clientX
+    touchStartX.current = e.touches[0].clientX
   }
   const handleTouchEnd = (e: React.TouchEvent) => {
     const touchEndX = e.changedTouches[0].clientX
-    if (Math.abs(touchEndX - touchStartX) > 50) {
+    if (Math.abs(touchEndX - touchStartX.current) > 50) {
       setFlipped(f => !f)
     }
   }
@@ -96,7 +108,7 @@ export default function Learn() {
   const current = cards[currentIndex]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
       {/* 进度 */}
       <div className="w-full max-w-2xl text-center mb-8">
         <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">
@@ -119,9 +131,9 @@ export default function Learn() {
           <div className={`absolute inset-0 flex flex-col items-center justify-center backface-hidden ${flipped ? 'opacity-0' : ''}`}>
             <h2 className="text-8xl font-bold text-gray-800 dark:text-white mb-8">{current.knowledge.name}</h2>
 
-            {(current.knowledge.metadata as any)?.phonetic && (
+            {current.knowledge.metadata?.phonetic && (
               <p className="text-4xl text-indigo-600 dark:text-indigo-400 font-medium mb-8">
-                {(current.knowledge.metadata as any).phonetic}
+                {current.knowledge.metadata.phonetic}
               </p>
             )}
 
@@ -152,9 +164,9 @@ export default function Learn() {
               </p>
             </div>
 
-            {(current.knowledge.metadata as any)?.phonetic && (
+            {current.knowledge.metadata?.phonetic && (
               <p className="text-4xl text-indigo-600 dark:text-indigo-400 font-medium mb-8">
-                {(current.knowledge.metadata as any).phonetic}
+                {current.knowledge.metadata.phonetic}
               </p>
             )}
 

@@ -1,7 +1,7 @@
 // src/app/stats/page.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabaseClient'
 
 export default function Stats() {
@@ -13,7 +13,7 @@ export default function Stats() {
     streak: 0,
     heatMap: [] as { date: string; count: number }[]
   })
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     const fetchStats = async () => {

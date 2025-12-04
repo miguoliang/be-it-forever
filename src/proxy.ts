@@ -12,6 +12,7 @@ export async function proxy(req: NextRequest) {
   } catch (error) {
     // If there's an error (e.g., during prerendering), just continue
     // This prevents crashes during static generation
+    console.error(error)
     return NextResponse.next({ request: req })
   }
 }
