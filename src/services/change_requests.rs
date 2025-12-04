@@ -1,6 +1,6 @@
 use crate::db::DbPool;
 use crate::error::{AppError, Result};
-use crate::models::{ChangeRequest, Knowledge, Page};
+use crate::models::{ChangeRequest, Page};
 use chrono::Utc;
 
 pub struct ChangeRequestService;
@@ -14,7 +14,7 @@ impl ChangeRequestService {
     ) -> Result<Page<ChangeRequest>> {
         let offset = page * size;
 
-        let (count_query, items_query) = if let Some(ref s) = status {
+        let (count_query, items_query) = if let Some(ref _s) = status {
             (
                 "SELECT COUNT(*) FROM change_requests WHERE status = $1",
                 "SELECT * FROM change_requests WHERE status = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",

@@ -11,7 +11,7 @@ use crate::{
     error::Result,
     models::{ChangeRequest, Page},
     services::change_requests::ChangeRequestService, // Updated import path
-    api::{AppState, PaginationParams},
+    api::AppState,
 };
 
 #[derive(Debug, Deserialize)]
