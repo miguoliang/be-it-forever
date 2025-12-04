@@ -1,4 +1,4 @@
-// src/app/page.tsx - Sign In Page
+// src/app/signup/page.tsx - Sign Up Page
 'use client'
 
 import { useState } from 'react'
@@ -6,25 +6,29 @@ import { createClient } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default function SignIn() {
+export default function SignUp() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
-  const handleLogin = async () => {
+  const handleSignup = async () => {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) alert(error.message)
-    else router.push('/learn')
+    const { error } = await supabase.auth.signUp({ email, password })
+    if (error) {
+      alert(error.message)
+    } else {
+      alert('注册成功！请查收邮件激活（开发环境会直接登录）')
+      router.push('/learn')
+    }
     setLoading(false)
   }
 
   return (
     <div style={{ maxWidth: 400, margin: '100px auto', textAlign: 'center' }}>
       <h1>英语学习工具</h1>
-      <h2 style={{ marginBottom: '30px', color: '#666' }}>登录</h2>
+      <h2 style={{ marginBottom: '30px', color: '#666' }}>注册</h2>
       <input
         type="email"
         placeholder="邮箱"
@@ -41,7 +45,7 @@ export default function SignIn() {
       />
       <div style={{ margin: '20px 0' }}>
         <button 
-          onClick={handleLogin} 
+          onClick={handleSignup} 
           disabled={loading} 
           style={{ 
             width: '100%',
@@ -54,15 +58,16 @@ export default function SignIn() {
             fontSize: '16px'
           }}
         >
-          {loading ? '登录中...' : '登录'}
+          {loading ? '注册中...' : '注册'}
         </button>
       </div>
       <div style={{ marginTop: '20px', color: '#666' }}>
-        还没有账号？{' '}
-        <Link href="/signup" style={{ color: '#0070f3', textDecoration: 'none' }}>
-          立即注册
+        已有账号？{' '}
+        <Link href="/" style={{ color: '#0070f3', textDecoration: 'none' }}>
+          立即登录
         </Link>
       </div>
     </div>
   )
 }
+
