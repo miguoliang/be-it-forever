@@ -13,6 +13,7 @@ const sidebarItems: SidebarItem[] = [
   { href: "/operator", label: "仪表盘", icon: "📊" },
   { href: "/operator/knowledges", label: "单词列表", icon: "📚" },
   { href: "/operator/import", label: "导入词库", icon: "📥" },
+  { href: "/operator/accounts", label: "账户管理", icon: "👥" },
   // Add more sidebar items here as needed
 ];
 
