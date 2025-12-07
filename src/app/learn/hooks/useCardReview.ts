@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { Card } from "../types";
 
 interface UseCardReviewParams {
@@ -16,8 +16,6 @@ export function useCardReview({
   setCards,
   resetFlip,
 }: UseCardReviewParams) {
-  const queryClient = useQueryClient();
-
   const { mutate: reviewCard } = useMutation({
     mutationFn: async ({ cardId, quality }: { cardId: number; quality: number }) => {
       const res = await fetch(`/api/cards/${cardId}/review`, {
@@ -31,15 +29,22 @@ export function useCardReview({
       }
     },
     onSuccess: () => {
-      // Invalidate cards query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ["cards", "due"] });
+      // Remove the reviewed card from the frontend list
+      const updatedCards = cards.filter((_, index) => index !== currentIndex);
+      setCards(updatedCards);
 
-      if (currentIndex < cards.length - 1) {
-        setCurrentIndex((i) => i + 1);
+      // Move to next card or show completion message
+      if (updatedCards.length > 0) {
+        // If we're at the end, stay at the last card
+        if (currentIndex >= updatedCards.length) {
+          setCurrentIndex(() => updatedCards.length - 1);
+        }
+        // Otherwise, stay at the same index (next card moves up)
         resetFlip();
       } else {
-        // All cards reviewed, clear the list
-        setCards([]);
+        // All cards reviewed
+        setCurrentIndex(() => 0);
+        resetFlip();
         alert("今日复习完成！明天再来！");
       }
     },

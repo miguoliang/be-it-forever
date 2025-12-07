@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,13 @@ export default function Learn() {
   const { handleTouchStart, handleTouchEnd } = useTouchSwipe(toggleFlip);
   const router = useRouter();
   const supabase = createClient();
+
+  // Reset index when cards list changes
+  useEffect(() => {
+    if (cards.length > 0 && currentIndex >= cards.length) {
+      setCurrentIndex(Math.max(0, cards.length - 1));
+    }
+  }, [cards.length, currentIndex]);
 
   const { handleRate } = useCardReview({
     cards,
