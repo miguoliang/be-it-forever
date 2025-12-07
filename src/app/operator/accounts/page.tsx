@@ -4,14 +4,19 @@ import { useEffect, useState, useMemo } from "react";
 import { useOperatorAuth } from "../import/hooks/useOperatorAuth";
 import { DataTable, ColumnConfig } from "@/components/Table";
 import { ColumnDef } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { DistributeCardsDialog } from "./components/DistributeCardsDialog";
+import { Paginator } from "../import/components/Paginator";
+import { Gift } from "lucide-react";
 
 interface Account {
-  id: number;
+  id: string; // UUID
   username: string;
   email?: string;
   role?: string;
   created_at: string;
   updated_at: string;
+  last_sign_in_at?: string | null;
 }
 
 // 默认列配置
@@ -20,6 +25,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "username", label: "用户名", visible: true },
   { key: "email", label: "邮箱", visible: true },
   { key: "role", label: "角色", visible: true },
+  { key: "last_sign_in_at", label: "最后登录", visible: true },
   { key: "created_at", label: "创建时间", visible: true },
   { key: "actions", label: "操作", visible: true },
 ];
@@ -31,23 +37,35 @@ export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [distributeDialogOpen, setDistributeDialogOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage] = useState(10);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
-    fetchAccounts();
-  }, []);
+    fetchAccounts(currentPage);
+  }, [currentPage]);
 
-  const fetchAccounts = async () => {
+  const fetchAccounts = async (page: number) => {
     try {
       setLoading(true);
-      const res = await fetch("/api/accounts");
+      const res = await fetch(`/api/accounts?page=${page}&perPage=${perPage}`);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "获取账户列表失败");
       }
       const data = await res.json();
-      // 处理返回的数据可能是数组或包含 accounts 字段的对象
-      const accountsList = Array.isArray(data) ? data : data.accounts || [];
-      setAccounts(accountsList);
+      // Handle paginated response
+      if (data.accounts && data.pagination) {
+        setAccounts(data.accounts);
+        setHasMore(data.pagination.hasMore || false);
+      } else {
+        // Fallback for non-paginated response
+        const accountsList = Array.isArray(data) ? data : data.accounts || [];
+        setAccounts(accountsList);
+        setHasMore(false);
+      }
     } catch (err: any) {
       setError(err.message || "加载失败");
     } finally {
@@ -96,6 +114,17 @@ export default function AccountsPage() {
         },
       },
       {
+        accessorKey: "last_sign_in_at",
+        header: "最后登录",
+        cell: ({ row }) => {
+          const lastSignIn = row.getValue("last_sign_in_at") as string | null | undefined;
+          if (!lastSignIn) {
+            return <span className="text-muted-foreground">从未登录</span>;
+          }
+          return new Date(lastSignIn).toLocaleString("zh-CN");
+        },
+      },
+      {
         accessorKey: "created_at",
         header: "创建时间",
         cell: ({ row }) => {
@@ -106,11 +135,23 @@ export default function AccountsPage() {
       {
         id: "actions",
         header: "操作",
-        cell: () => (
-          <button className="text-primary hover:text-primary/80">
-            查看详情
-          </button>
-        ),
+        cell: ({ row }) => {
+          const account = row.original;
+          return (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedAccount(account);
+                setDistributeDialogOpen(true);
+              }}
+              className="gap-2"
+            >
+              <Gift className="h-4 w-4" />
+              分配卡片
+            </Button>
+          );
+        },
       },
     ],
     []
@@ -132,7 +173,7 @@ export default function AccountsPage() {
         columns={columns}
         loading={loading}
         error={error}
-        pagination={{ enabled: true, pageSize: 10 }}
+        pagination={{ enabled: false }}
         columnSettings={{
           enabled: true,
           storageKey: STORAGE_KEY,
@@ -141,6 +182,30 @@ export default function AccountsPage() {
         sorting={{ enabled: true }}
         emptyMessage="暂无数据"
       />
+
+      {!loading && accounts.length > 0 && (
+        <div className="mt-4">
+          <Paginator
+            currentPage={currentPage}
+            totalPages={hasMore ? currentPage + 1 : currentPage}
+            onPageChange={(page) => setCurrentPage(page)}
+            itemsPerPage={perPage}
+            totalItems={accounts.length}
+          />
+        </div>
+      )}
+
+      {selectedAccount && (
+        <DistributeCardsDialog
+          open={distributeDialogOpen}
+          onOpenChange={setDistributeDialogOpen}
+          accountId={selectedAccount.id}
+          accountUsername={selectedAccount.username}
+          onSuccess={() => {
+            // Optionally refresh accounts list
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { createRouteHandlerClient } from "@/lib/supabaseServer";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const supabase = await createRouteHandlerClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -9,42 +9,67 @@ export async function GET() {
     return NextResponse.json({ error: "权限不足" }, { status: 403 });
   }
 
-  try {
-    // 尝试查询 accounts 表
-    const { data: accountsData, error: accountsError } = await supabase
-      .from("accounts")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (accountsError && accountsError.code !== "PGRST116") {
-      // PGRST116 表示表不存在，其他错误才返回
-      console.error("Accounts table error:", accountsError);
-    }
-
-    // 如果 accounts 表存在且有数据，返回它
-    if (accountsData && accountsData.length > 0) {
-      // 返回账户数据
-      // 注意：如果需要获取邮箱等 auth 信息，需要使用 Supabase Admin API
-      const accountsWithInfo = accountsData.map((account: any) => ({
-        id: account.id,
-        username: account.username,
-        email: account.email || null,
-        role: account.role || null,
-        created_at: account.created_at,
-        updated_at: account.updated_at,
-      }));
-      return NextResponse.json(accountsWithInfo);
-    }
-
-    // 如果没有 accounts 表，返回提示信息
-    // 实际项目中，应该使用 Supabase Admin API 查询 auth.users
+  // Check if SUPABASE_SERVICE_ROLE_KEY is configured
+  // Service Role Key is required to access auth.users via Admin API
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json(
-      {
-        message: "accounts 表不存在或为空。如需查询 Supabase Auth 用户，请使用 Admin API。",
-        accounts: [],
-      },
-      { status: 200 }
+      { error: "SUPABASE_SERVICE_ROLE_KEY 未配置。请在环境变量中配置 Service Role Key 以访问 auth.users 表。" },
+      { status: 500 }
     );
+  }
+
+  try {
+    // Get pagination parameters from query string
+    const searchParams = req.nextUrl.searchParams;
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const perPage = parseInt(searchParams.get("perPage") || "10", 10);
+
+    // Use Admin API to list users with pagination
+    // Admin API requires Service Role Key and can directly access auth.users
+    const { createClient } = await import("@supabase/supabase-js");
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    const { data: usersResponse, error } = await adminClient.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    if (!usersResponse || !usersResponse.users) {
+      throw new Error("无法获取用户列表");
+    }
+
+    // Map users to expected format
+    const accounts = usersResponse.users.map((u: any) => ({
+      id: u.id,
+      username: u.user_metadata?.username || u.email?.split("@")[0] || u.id.substring(0, 8),
+      email: u.email || "",
+      role: (u.user_metadata?.role as string)?.trim() || "learner",
+      created_at: u.created_at,
+      updated_at: u.updated_at || u.created_at,
+      last_sign_in_at: u.last_sign_in_at || null,
+    }));
+
+    // Check if there are more pages
+    // If we got exactly perPage items, there might be more
+    const hasMore = usersResponse.users.length === perPage;
+
+    return NextResponse.json({
+      accounts,
+      pagination: {
+        page,
+        perPage,
+        hasMore,
+        // Note: Total count requires a separate API call or RPC function
+        // For now, we'll indicate if there might be more pages
+      },
+    });
   } catch (error: any) {
     console.error("Accounts API error:", error);
     return NextResponse.json(
