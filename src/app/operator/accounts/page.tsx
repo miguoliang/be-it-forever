@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { fetchAccounts } from "@/lib/api/accounts";
 import { useOperatorAuth } from "../import/hooks/useOperatorAuth";
 import { DataTable, ColumnConfig } from "@/components/Table";
 import { ColumnDef } from "@tanstack/react-table";
@@ -47,14 +48,7 @@ export default function AccountsPage() {
     refetch,
   } = useQuery({
     queryKey: ["accounts", currentPage, perPage],
-    queryFn: async () => {
-      const res = await fetch(`/api/accounts?page=${currentPage}&perPage=${perPage}`);
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "获取账户列表失败");
-      }
-      return res.json();
-    },
+    queryFn: () => fetchAccounts(currentPage, perPage),
   });
 
   const accounts = accountsData?.accounts || [];

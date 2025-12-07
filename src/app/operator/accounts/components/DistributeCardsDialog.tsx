@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { distributeCards as distributeCardsAPI } from "@/lib/api/accounts";
 import {
   Dialog,
   DialogContent,
@@ -30,21 +31,7 @@ export const DistributeCardsDialog = ({
   const queryClient = useQueryClient();
 
   const { mutate: distributeCards, isPending: distributing, error } = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/accounts/${accountId}/distribute-cards`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "分配卡片失败");
-      }
-
-      return res.json();
-    },
+    mutationFn: () => distributeCardsAPI(accountId),
     onSuccess: (data) => {
       // Invalidate accounts query to refresh the list
       queryClient.invalidateQueries({ queryKey: ["accounts"] });

@@ -26,10 +26,17 @@ export default function Learn() {
   const router = useRouter();
   const supabase = createClient();
 
-  // Reset index when cards list changes
+  // Ensure currentIndex is within bounds
+  const safeIndex = cards.length > 0 ? Math.min(currentIndex, cards.length - 1) : 0;
+
+  // Reset index when cards list changes (using useEffect with proper pattern)
   useEffect(() => {
     if (cards.length > 0 && currentIndex >= cards.length) {
-      setCurrentIndex(Math.max(0, cards.length - 1));
+      // Use setTimeout to avoid synchronous setState in effect
+      const timeoutId = setTimeout(() => {
+        setCurrentIndex(Math.max(0, cards.length - 1));
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [cards.length, currentIndex]);
 
@@ -64,7 +71,7 @@ export default function Learn() {
           <span className="hidden sm:inline">退出登录</span>
         </Button>
       </div>
-      <ProgressIndicator current={currentIndex + 1} total={cards.length} />
+      <ProgressIndicator current={safeIndex + 1} total={cards.length} />
 
       <StudyCard
         card={current}

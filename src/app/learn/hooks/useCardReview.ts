@@ -1,11 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
+import { reviewCard as reviewCardAPI } from "@/lib/api/cards";
 import type { Card } from "../types";
 
 interface UseCardReviewParams {
   cards: Card[];
   currentIndex: number;
   setCurrentIndex: (updater: (i: number) => number) => void;
-  setCards: (cards: Card[]) => void;
+  setCards: (cards: Card[] | ((prev: Card[] | null) => Card[] | null)) => void;
   resetFlip: () => void;
 }
 
@@ -16,48 +17,52 @@ export function useCardReview({
   setCards,
   resetFlip,
 }: UseCardReviewParams) {
-  const { mutate: reviewCard } = useMutation({
-    mutationFn: async ({ cardId, quality }: { cardId: number; quality: number }) => {
-      const res = await fetch(`/api/cards/${cardId}/review`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quality }),
+  const { mutate: reviewCard, isPending } = useMutation({
+    mutationFn: ({ cardId, quality }: { cardId: number; quality: number }) =>
+      reviewCardAPI(cardId, quality),
+    // Optimistic update: immediately update UI
+    onMutate: async ({ cardId }) => {
+      // Snapshot the previous value for rollback
+      const previousCards = cards;
+      
+      // Optimistically update the cards list by removing the reviewed card
+      setCards((prevCards) => {
+        if (!prevCards) return [];
+        const updatedCards = prevCards.filter((card) => card.id !== cardId);
+        
+        // Update index and flip state
+        if (updatedCards.length > 0) {
+          if (currentIndex >= updatedCards.length) {
+            setCurrentIndex(() => updatedCards.length - 1);
+          }
+          resetFlip();
+        } else {
+          setCurrentIndex(() => 0);
+          resetFlip();
+          alert("今日复习完成！明天再来！");
+        }
+        
+        return updatedCards;
       });
 
-      if (!res.ok) {
-        throw new Error("复习失败");
-      }
+      return { previousCards };
     },
-    onSuccess: () => {
-      // Remove the reviewed card from the frontend list
-      const updatedCards = cards.filter((_, index) => index !== currentIndex);
-      setCards(updatedCards);
-
-      // Move to next card or show completion message
-      if (updatedCards.length > 0) {
-        // If we're at the end, stay at the last card
-        if (currentIndex >= updatedCards.length) {
-          setCurrentIndex(() => updatedCards.length - 1);
-        }
-        // Otherwise, stay at the same index (next card moves up)
-        resetFlip();
-      } else {
-        // All cards reviewed
-        setCurrentIndex(() => 0);
-        resetFlip();
-        alert("今日复习完成！明天再来！");
+    // If mutation fails, rollback to previous state
+    onError: (error, variables, context) => {
+      if (context?.previousCards) {
+        setCards(context.previousCards);
       }
-    },
-    onError: (error) => {
       alert((error as Error).message || "复习失败");
     },
   });
 
   const handleRate = (quality: number) => {
     const card = cards[currentIndex];
-    reviewCard({ cardId: card.id, quality });
+    if (card) {
+      reviewCard({ cardId: card.id, quality });
+    }
   };
 
-  return { handleRate };
+  return { handleRate, isPending };
 }
 

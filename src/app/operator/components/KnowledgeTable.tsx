@@ -2,22 +2,9 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { fetchKnowledges, type Knowledge } from "@/lib/api/knowledge";
 import { DataTable, ColumnConfig } from "@/components/Table";
 import { ColumnDef } from "@tanstack/react-table";
-
-interface KnowledgeMetadata {
-  phonetic?: string;
-  [key: string]: unknown;
-}
-
-interface Knowledge {
-  code: string;
-  name: string;
-  description: string;
-  metadata: KnowledgeMetadata;
-  created_at: string;
-  updated_at: string;
-}
 
 // 默认列配置
 const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -39,16 +26,7 @@ export function KnowledgeTable() {
     refetch,
   } = useQuery({
     queryKey: ["knowledges"],
-    queryFn: async () => {
-      const res = await fetch("/api/knowledge");
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          throw new Error("权限不足");
-        }
-        throw new Error("加载失败");
-      }
-      return res.json();
-    },
+    queryFn: fetchKnowledges,
   });
 
   const error = queryError ? (queryError as Error).message : null;
@@ -83,7 +61,7 @@ export function KnowledgeTable() {
         accessorKey: "metadata",
         header: "音标",
         cell: ({ row }) => {
-          const metadata = row.getValue("metadata") as KnowledgeMetadata;
+          const metadata = row.getValue("metadata") as Knowledge["metadata"];
           const phonetic = metadata?.phonetic;
           const name = row.original.name;
 
