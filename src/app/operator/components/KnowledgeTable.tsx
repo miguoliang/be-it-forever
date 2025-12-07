@@ -35,27 +35,29 @@ export function KnowledgeTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchKnowledges = async () => {
-      try {
-        const res = await fetch("/api/knowledge");
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) {
-            setError("权限不足");
-            return;
-          }
-          setError("加载失败");
+  const fetchKnowledges = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch("/api/knowledge");
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          setError("权限不足");
           return;
         }
-        const data = await res.json();
-        setKnowledges(data);
-      } catch (err) {
         setError("加载失败");
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
+      const data = await res.json();
+      setKnowledges(data);
+    } catch (err) {
+      setError("加载失败");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchKnowledges();
   }, []);
 
@@ -166,6 +168,10 @@ export function KnowledgeTable() {
       }}
       sorting={{ enabled: true }}
       emptyMessage="暂无数据"
+      refreshButton={{
+        onClick: fetchKnowledges,
+        loading: loading,
+      }}
     />
   );
 }

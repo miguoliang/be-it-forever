@@ -17,6 +17,8 @@ import { useState, useEffect, useMemo } from "react";
 import { Paginator } from "@/app/operator/import/components/Paginator";
 import { ColumnSettings } from "@/app/operator/accounts/components/ColumnSettings";
 import type { ColumnConfig } from "@/app/operator/accounts/components/ColumnSettings";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -48,6 +50,13 @@ interface DataTableProps<TData> {
   };
   // 空数据提示
   emptyMessage?: string;
+  // 自定义行样式
+  getRowClassName?: (row: TData) => string;
+  // 刷新按钮配置
+  refreshButton?: {
+    onClick: () => void;
+    loading?: boolean;
+  };
 }
 
 export const DataTable = <TData extends unknown>({
@@ -59,6 +68,8 @@ export const DataTable = <TData extends unknown>({
   columnSettings,
   sorting = { enabled: true },
   emptyMessage = "暂无数据",
+  getRowClassName,
+  refreshButton,
 }: DataTableProps<TData>) => {
   const [sortingState, setSortingState] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -94,17 +105,7 @@ export const DataTable = <TData extends unknown>({
   const [columnConfigs, setColumnConfigs] = useState<ColumnConfig[]>(() => {
     if (columnSettings?.enabled) {
       if (columnSettings.defaultColumns && columnSettings.defaultColumns.length > 0) {
-        // 如果有默认列配置，使用它
-        if (typeof window !== "undefined" && columnSettings.storageKey) {
-          const saved = localStorage.getItem(columnSettings.storageKey);
-          if (saved) {
-            try {
-              return JSON.parse(saved);
-            } catch {
-              return columnSettings.defaultColumns;
-            }
-          }
-        }
+        // 如果有默认列配置，直接使用它
         return columnSettings.defaultColumns;
       } else {
         // 如果没有默认列配置，从 columns 中生成
@@ -126,17 +127,6 @@ export const DataTable = <TData extends unknown>({
             visible: true,
           };
         });
-
-        if (typeof window !== "undefined" && columnSettings.storageKey) {
-          const saved = localStorage.getItem(columnSettings.storageKey);
-          if (saved) {
-            try {
-              return JSON.parse(saved);
-            } catch {
-              return generatedConfigs;
-            }
-          }
-        }
         return generatedConfigs;
       }
     }
@@ -154,20 +144,6 @@ export const DataTable = <TData extends unknown>({
       setColumnConfigs(generateColumnConfigs);
     }
   }, [columns, columnSettings, generateColumnConfigs, columnConfigs.length]);
-
-  // 保存列设置到 localStorage
-  useEffect(() => {
-    if (
-      columnSettings?.enabled &&
-      columnSettings?.storageKey &&
-      columnConfigs.length > 0
-    ) {
-      localStorage.setItem(
-        columnSettings.storageKey,
-        JSON.stringify(columnConfigs)
-      );
-    }
-  }, [columnConfigs, columnSettings]);
 
   // 根据列设置更新列可见性
   useEffect(() => {
@@ -246,12 +222,26 @@ export const DataTable = <TData extends unknown>({
 
   return (
     <div className="space-y-4">
-      {columnSettings?.enabled && (
-        <div className="flex justify-end">
-          <ColumnSettings
-            columns={columnConfigs}
-            onColumnsChange={setColumnConfigs}
-          />
+      {(columnSettings?.enabled || refreshButton) && (
+        <div className="flex justify-end gap-2">
+          {refreshButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshButton.onClick}
+              disabled={refreshButton.loading || loading}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshButton.loading || loading ? "animate-spin" : ""}`} />
+              刷新
+            </Button>
+          )}
+          {columnSettings?.enabled && (
+            <ColumnSettings
+              columns={columnConfigs}
+              onColumnsChange={setColumnConfigs}
+            />
+          )}
         </div>
       )}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -311,18 +301,22 @@ export const DataTable = <TData extends unknown>({
                 </TableCell>
               </TableRow>
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-6 py-4 whitespace-nowrap">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const rowData = row.original;
+                const rowClassName = getRowClassName ? getRowClassName(rowData) : "";
+                return (
+                  <TableRow key={row.id} className={rowClassName}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="px-6 py-4 whitespace-nowrap">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

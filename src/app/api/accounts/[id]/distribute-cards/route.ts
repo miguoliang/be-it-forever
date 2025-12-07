@@ -24,6 +24,45 @@ export async function POST(
       return NextResponse.json({ error: "无效的账户ID格式" }, { status: 400 });
     }
 
+    // Check if the target account is an operator - operators cannot receive cards
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json(
+        { error: "SUPABASE_SERVICE_ROLE_KEY 未配置" },
+        { status: 500 }
+      );
+    }
+
+    const { createClient } = await import("@supabase/supabase-js");
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    const { data: targetUser, error: userError } = await adminClient.auth.admin.getUserById(accountId);
+    
+    if (userError) {
+      console.error("Get target user error:", userError);
+      return NextResponse.json(
+        { error: "获取目标账户信息失败" },
+        { status: 500 }
+      );
+    }
+
+    if (!targetUser || !targetUser.user) {
+      return NextResponse.json(
+        { error: "目标账户不存在" },
+        { status: 404 }
+      );
+    }
+
+    const targetRole = (targetUser.user.user_metadata?.role as string)?.trim() || "learner";
+    if (targetRole === "operator") {
+      return NextResponse.json(
+        { error: "不能给 operator 分配卡片" },
+        { status: 400 }
+      );
+    }
+
     // Get all knowledge items
     const { data: knowledges, error: knowledgesError } = await supabase
       .from("knowledge")

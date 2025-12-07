@@ -7,7 +7,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { DistributeCardsDialog } from "./components/DistributeCardsDialog";
 import { Paginator } from "../import/components/Paginator";
-import { Gift } from "lucide-react";
+import { Gift, RefreshCw } from "lucide-react";
 
 interface Account {
   id: string; // UUID
@@ -21,7 +21,7 @@ interface Account {
 
 // 默认列配置
 const DEFAULT_COLUMNS: ColumnConfig[] = [
-  { key: "id", label: "ID", visible: true },
+  { key: "id", label: "ID", visible: false },
   { key: "username", label: "用户名", visible: true },
   { key: "email", label: "邮箱", visible: true },
   { key: "role", label: "角色", visible: true },
@@ -137,6 +137,13 @@ export default function AccountsPage() {
         header: "操作",
         cell: ({ row }) => {
           const account = row.original;
+          const role = (account.role as string)?.trim() || "learner";
+          
+          // Don't show distribute button for operators
+          if (role === "operator") {
+            return <span className="text-muted-foreground text-sm">-</span>;
+          }
+          
           return (
             <Button
               variant="outline"
@@ -181,6 +188,16 @@ export default function AccountsPage() {
         }}
         sorting={{ enabled: true }}
         emptyMessage="暂无数据"
+        getRowClassName={(account) => {
+          const role = (account.role as string)?.trim() || "learner";
+          return role === "operator" 
+            ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-500" 
+            : "";
+        }}
+        refreshButton={{
+          onClick: () => fetchAccounts(currentPage),
+          loading: loading,
+        }}
       />
 
       {!loading && accounts.length > 0 && (
