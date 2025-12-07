@@ -7,7 +7,7 @@ import { useEffect } from 'react'
 import { ThemeProvider } from 'next-themes'
 
 // Valid routes that should handle auth state changes
-const VALID_ROUTES = ["/", "/signup", "/learn", "/stats", "/operator"];
+const VALID_ROUTES = ["/", "/learn", "/stats", "/operator"];
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const supabase = createClient()

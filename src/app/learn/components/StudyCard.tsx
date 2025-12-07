@@ -27,10 +27,11 @@ export const StudyCard = ({
       onTouchEnd={onTouchEnd}
     >
       <ShadcnCard
-        className="rounded-3xl shadow-2xl p-12 min-h-96 flex flex-col justify-center items-center cursor-pointer select-none transition-all duration-500 preserve-3d relative"
+        className="rounded-3xl shadow-2xl p-12 min-h-96 flex flex-col justify-center items-center cursor-pointer select-none transition-all duration-500 preserve-3d relative bg-card"
         style={{
           transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
           transformStyle: "preserve-3d",
+          backgroundColor: 'hsl(var(--card))',
         }}
         onClick={onFlip}
       >

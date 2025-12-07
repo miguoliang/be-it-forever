@@ -4,7 +4,6 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -141,13 +140,7 @@ export default function SignIn() {
           )}
         </div>
         <div className="mt-5 md:mt-6 text-gray-600 dark:text-gray-400 text-sm md:text-base">
-          还没有账号？{" "}
-          <Link
-            href="/signup"
-            className="text-primary no-underline font-medium hover:underline"
-          >
-            立即注册
-          </Link>
+          首次使用？输入邮箱即可自动创建账号
         </div>
       </div>
     </div>

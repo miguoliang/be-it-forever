@@ -2,7 +2,10 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
+import { Button } from '@/components/ui/button'
+import { LogOut } from 'lucide-react'
 
 export default function Stats() {
   const [stats, setStats] = useState({
@@ -14,6 +17,12 @@ export default function Stats() {
     heatMap: [] as { date: string; count: number }[]
   })
   const supabase = useMemo(() => createClient(), [])
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -60,7 +69,18 @@ export default function Stats() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-10 text-gray-900 dark:text-white">我的学习统计</h1>
+        <div className="flex justify-between items-center mb-10">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">我的学习统计</h1>
+          <Button
+            onClick={handleSignOut}
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">退出登录</span>
+          </Button>
+        </div>
 
         {/* 四宫格 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
