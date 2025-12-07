@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   try {
     // words 已经是标准化的 WordData 格式
     const knowledgeData = words
-      .map((w: any) => ({
+      .map((w: { name?: string; description?: string; metadata?: Record<string, unknown> }) => ({
         name: w.name?.trim() || "",
         description: w.description?.trim() || "",
         metadata: w.metadata || {},
@@ -66,9 +66,10 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/json" },
       }
     );
-  } catch (e: any) {
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : "Import failed";
     return new Response(
-      JSON.stringify({ error: e.message || "Import failed" }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { "Content-Type": "application/json" },

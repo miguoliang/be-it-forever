@@ -21,6 +21,27 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
+      // Handle rate limiting error with friendly message
+      if (error.message.includes("For security purposes, you can only request this after")) {
+        const match = error.message.match(/(\d+)\s+seconds?/);
+        const seconds = match ? parseInt(match[1], 10) : 30;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        
+        let waitTime = "";
+        if (minutes > 0) {
+          waitTime = `${minutes}分${remainingSeconds > 0 ? `${remainingSeconds}秒` : ""}`;
+        } else {
+          waitTime = `${seconds}秒`;
+        }
+        
+        return NextResponse.json(
+          { 
+            error: `为了您的账户安全，请等待 ${waitTime} 后再重新发送验证码。如果您的邮箱没有收到验证码，请检查垃圾邮件文件夹。` 
+          },
+          { status: 429 } // 429 Too Many Requests
+        );
+      }
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
@@ -28,9 +49,10 @@ export async function POST(req: NextRequest) {
       success: true,
       message: "验证码已发送到您的邮箱",
     });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "发送验证码失败";
     return NextResponse.json(
-      { error: error.message || "发送验证码失败" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { DataTable, ColumnConfig } from "@/components/Table";
 import { ColumnDef } from "@tanstack/react-table";
 
@@ -31,35 +32,26 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 const STORAGE_KEY = "knowledges_table_columns";
 
 export function KnowledgeTable() {
-  const [knowledges, setKnowledges] = useState<Knowledge[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchKnowledges = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const {
+    data: knowledges = [],
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ["knowledges"],
+    queryFn: async () => {
       const res = await fetch("/api/knowledge");
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
-          setError("权限不足");
-          return;
+          throw new Error("权限不足");
         }
-        setError("加载失败");
-        return;
+        throw new Error("加载失败");
       }
-      const data = await res.json();
-      setKnowledges(data);
-    } catch (err) {
-      setError("加载失败");
-    } finally {
-      setLoading(false);
-    }
-  };
+      return res.json();
+    },
+  });
 
-  useEffect(() => {
-    fetchKnowledges();
-  }, []);
+  const error = queryError ? (queryError as Error).message : null;
 
   // 定义列
   const columns = useMemo<ColumnDef<Knowledge>[]>(
@@ -169,7 +161,7 @@ export function KnowledgeTable() {
       sorting={{ enabled: true }}
       emptyMessage="暂无数据"
       refreshButton={{
-        onClick: fetchKnowledges,
+        onClick: () => refetch(),
         loading: loading,
       }}
     />

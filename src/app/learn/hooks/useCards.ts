@@ -1,37 +1,26 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { Card } from "../types";
 
 export function useCards() {
-  const [cards, setCards] = useState<Card[]>([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadCards = async () => {
+  const { data: cards = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ["cards", "due"],
+    queryFn: async () => {
       const res = await fetch("/api/cards/due");
       if (!res.ok) {
-        if (res.status === 401 && isMounted) {
+        if (res.status === 401) {
           router.push("/");
+          throw new Error("未登录");
         }
-        return;
+        throw new Error("获取卡片失败");
       }
-      const data = await res.json();
-      if (isMounted) {
-        setCards(data);
-        setLoading(false);
-      }
-    };
+      return res.json() as Promise<Card[]>;
+    },
+    retry: false,
+  });
 
-    loadCards();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
-
-  return { cards, setCards, loading };
+  return { cards, setCards: () => {}, loading, refetch };
 }
 

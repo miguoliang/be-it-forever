@@ -59,7 +59,7 @@ interface DataTableProps<TData> {
   };
 }
 
-export const DataTable = <TData extends unknown>({
+export const DataTable = <TData,>({
   data,
   columns,
   loading = false,
@@ -179,6 +179,7 @@ export const DataTable = <TData extends unknown>({
     return columns;
   }, [columns, columnConfigs, columnSettings]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table API returns functions that cannot be memoized safely
   const table = useReactTable({
     data,
     columns: tableColumns,

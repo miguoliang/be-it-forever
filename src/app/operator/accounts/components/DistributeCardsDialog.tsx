@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -27,14 +27,10 @@ export const DistributeCardsDialog = ({
   accountUsername,
   onSuccess,
 }: DistributeCardsDialogProps) => {
-  const [distributing, setDistributing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const handleDistribute = async () => {
-    try {
-      setDistributing(true);
-      setError(null);
-
+  const { mutate: distributeCards, isPending: distributing, error } = useMutation({
+    mutationFn: async () => {
       const res = await fetch(`/api/accounts/${accountId}/distribute-cards`, {
         method: "POST",
         headers: {
@@ -47,15 +43,19 @@ export const DistributeCardsDialog = ({
         throw new Error(data.error || "分配卡片失败");
       }
 
-      const data = await res.json();
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Invalidate accounts query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
       onSuccess?.();
       onOpenChange(false);
       alert(`成功分配 ${data.count} 张卡片给 ${accountUsername}`);
-    } catch (err: any) {
-      setError(err.message || "分配失败");
-    } finally {
-      setDistributing(false);
-    }
+    },
+  });
+
+  const handleDistribute = () => {
+    distributeCards();
   };
 
   return (
@@ -70,7 +70,7 @@ export const DistributeCardsDialog = ({
 
         {error && (
           <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-            {error}
+            {(error as Error).message || "分配失败"}
           </div>
         )}
 

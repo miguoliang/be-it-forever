@@ -22,7 +22,7 @@ export function ImportSidebar({
               <h4 className="text-gray-900 dark:text-white font-semibold mb-2">步骤说明</h4>
               <p>1. 选择 CSV 格式的文件</p>
               <p>2. 系统将自动解析文件内容</p>
-              <p>3. 点击"下一步"进入预览页面</p>
+              <p>3. 点击&ldquo;下一步&rdquo;进入预览页面</p>
             </div>
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
               <h4 className="text-gray-900 dark:text-white font-semibold mb-2">文件要求</h4>

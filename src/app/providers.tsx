@@ -3,13 +3,25 @@
 
 import { createClient } from '@/lib/supabaseClient'
 import { useRouter, usePathname } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ThemeProvider } from 'next-themes'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Valid routes that should handle auth state changes
 const VALID_ROUTES = ["/", "/learn", "/stats", "/operator"];
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000, // 1 minute
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  )
   const supabase = createClient()
   const router = useRouter()
   const pathname = usePathname()
@@ -47,8 +59,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, [supabase, router, pathname])
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      {children}
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        {children}
+      </ThemeProvider>
+    </QueryClientProvider>
   )
 }

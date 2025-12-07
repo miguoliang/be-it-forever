@@ -45,7 +45,7 @@ export function useCSVParser() {
           // Rest are data rows, convert to standardized WordData format
           const rows: WordData[] = data.slice(1)
             .map((row) => {
-              const rowObj: any = {};
+              const rowObj: Record<string, string> = {};
               headers.forEach((header) => {
                 const index = headerIndexMap.get(header);
                 if (index !== undefined) {

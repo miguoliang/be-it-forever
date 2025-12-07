@@ -135,10 +135,11 @@ export async function POST(
       message: `成功分配 ${insertedCount} 张卡片${skippedCount > 0 ? `（${skippedCount} 张已存在）` : ""}`,
       count: insertedCount,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Distribute cards exception:", error);
+    const errorMessage = error instanceof Error ? error.message : "分配卡片失败";
     return NextResponse.json(
-      { error: error.message || "分配卡片失败" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

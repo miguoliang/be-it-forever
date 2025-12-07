@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { TopNav } from "./components/TopNav";

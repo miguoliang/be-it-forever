@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Map users to expected format
-    const accounts = usersResponse.users.map((u: any) => ({
+    const accounts = usersResponse.users.map((u) => ({
       id: u.id,
       username: u.user_metadata?.username || u.email?.split("@")[0] || u.id.substring(0, 8),
       email: u.email || "",
@@ -70,10 +70,11 @@ export async function GET(req: NextRequest) {
         // For now, we'll indicate if there might be more pages
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Accounts API error:", error);
+    const errorMessage = error instanceof Error ? error.message : "获取账户列表失败";
     return NextResponse.json(
-      { error: error.message || "获取账户列表失败" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

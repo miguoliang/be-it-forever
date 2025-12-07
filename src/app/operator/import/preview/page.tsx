@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useOperatorAuth } from "../hooks/useOperatorAuth";
 import { useWordImport } from "../hooks/useWordImport";
@@ -8,21 +8,19 @@ import { PreviewTable } from "../components/PreviewTable";
 import { ImportButton } from "../components/ImportButton";
 import { BackButton } from "../components/BackButton";
 import { getCSVData, clearCSVData } from "../utils/csvStorage";
-import { CSVData } from "../hooks/useCSVParser";
 
 export default function PreviewPage() {
   useOperatorAuth();
   const router = useRouter();
   const { loading, importWords } = useWordImport();
-  const [csvData, setCsvData] = useState<{ data: CSVData; fileName: string } | null>(null);
-
-  useEffect(() => {
+  
+  const csvData = useMemo(() => {
     const stored = getCSVData();
     if (!stored) {
       router.replace("/operator/import");
-      return;
+      return null;
     }
-    setCsvData(stored);
+    return stored;
   }, [router]);
 
   const handleImport = async () => {
@@ -31,14 +29,16 @@ export default function PreviewPage() {
       return;
     }
 
-    const result = await importWords(csvData.data);
-
-    if (result.success) {
-      alert(`成功导入 ${result.count} 个单词！`);
-      clearCSVData();
-      router.push("/operator/import");
-    } else {
-      alert(result.error || "导入失败");
+    try {
+      const result = await importWords(csvData.data);
+      if (result.success) {
+        alert(`成功导入 ${result.count} 个单词！`);
+        clearCSVData();
+        router.push("/operator/import");
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "导入失败";
+      alert(errorMessage);
     }
   };
 

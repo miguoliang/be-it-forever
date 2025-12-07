@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { CSVData } from "./useCSVParser";
 
 interface ImportResult {
@@ -8,14 +8,8 @@ interface ImportResult {
 }
 
 export function useWordImport() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const importWords = async (previewData: CSVData): Promise<ImportResult> => {
-    setLoading(true);
-    setError(null);
-
-    try {
+  const { mutateAsync: importWords, isPending: loading, error } = useMutation({
+    mutationFn: async (previewData: CSVData): Promise<ImportResult> => {
       const res = await fetch("/api/import-words", {
         method: "POST",
         headers: {
@@ -30,21 +24,14 @@ export function useWordImport() {
         return { success: true, count: result.count };
       } else {
         const errorMessage = result.error || "导入失败";
-        setError(errorMessage);
-        return { success: false, error: errorMessage };
+        throw new Error(errorMessage);
       }
-    } catch (err: any) {
-      const errorMessage = err.message || "导入失败";
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
   return {
     loading,
-    error,
+    error: error ? (error as Error).message : null,
     importWords,
   };
 }

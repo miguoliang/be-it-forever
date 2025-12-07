@@ -37,7 +37,26 @@ export default function SignIn() {
 
       if (error) {
         console.error("OTP Error:", error);
-        alert(error.message);
+        
+        // Handle rate limiting error with friendly message
+        if (error.message.includes("For security purposes, you can only request this after")) {
+          const match = error.message.match(/(\d+)\s+seconds?/);
+          const seconds = match ? parseInt(match[1], 10) : 30;
+          const minutes = Math.floor(seconds / 60);
+          const remainingSeconds = seconds % 60;
+          
+          let waitTime = "";
+          if (minutes > 0) {
+            waitTime = `${minutes}分${remainingSeconds > 0 ? `${remainingSeconds}秒` : ""}`;
+          } else {
+            waitTime = `${seconds}秒`;
+          }
+          
+          alert(`为了您的账户安全，请等待 ${waitTime} 后再重新发送验证码。\n\n如果您的邮箱没有收到验证码，请检查垃圾邮件文件夹。`);
+        } else {
+          alert(error.message);
+        }
+        
         setLoading(false);
         return;
       }
@@ -45,9 +64,29 @@ export default function SignIn() {
       setOtpSent(true);
       setLoading(false);
       alert("验证码已发送到您的邮箱，请查收。如果邮件中只有链接，请点击链接登录，或检查邮件模板配置。");
-    } catch (err: any) {
+    } catch (err) {
       console.error("OTP Exception:", err);
-      alert(err.message || "发送验证码失败，请检查网络连接");
+      const errorMessage = err instanceof Error ? err.message : "发送验证码失败，请检查网络连接";
+      
+      // Handle rate limiting in catch block as well
+      if (errorMessage.includes("For security purposes, you can only request this after")) {
+        const match = errorMessage.match(/(\d+)\s+seconds?/);
+        const seconds = match ? parseInt(match[1], 10) : 30;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        
+        let waitTime = "";
+        if (minutes > 0) {
+          waitTime = `${minutes}分${remainingSeconds > 0 ? `${remainingSeconds}秒` : ""}`;
+        } else {
+          waitTime = `${seconds}秒`;
+        }
+        
+        alert(`为了您的账户安全，请等待 ${waitTime} 后再重新发送验证码。\n\n如果您的邮箱没有收到验证码，请检查垃圾邮件文件夹。`);
+      } else {
+        alert(errorMessage);
+      }
+      
       setLoading(false);
     }
   };
@@ -66,7 +105,24 @@ export default function SignIn() {
     });
 
     if (error) {
-      alert(error.message);
+      // Handle rate limiting error for OTP verification as well
+      if (error.message.includes("For security purposes, you can only request this after")) {
+        const match = error.message.match(/(\d+)\s+seconds?/);
+        const seconds = match ? parseInt(match[1], 10) : 30;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        
+        let waitTime = "";
+        if (minutes > 0) {
+          waitTime = `${minutes}分${remainingSeconds > 0 ? `${remainingSeconds}秒` : ""}`;
+        } else {
+          waitTime = `${seconds}秒`;
+        }
+        
+        alert(`为了您的账户安全，请等待 ${waitTime} 后再重试。`);
+      } else {
+        alert(error.message);
+      }
       setLoading(false);
       return;
     }

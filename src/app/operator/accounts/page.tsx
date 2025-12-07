@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useOperatorAuth } from "../import/hooks/useOperatorAuth";
 import { DataTable, ColumnConfig } from "@/components/Table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { DistributeCardsDialog } from "./components/DistributeCardsDialog";
 import { Paginator } from "../import/components/Paginator";
-import { Gift, RefreshCw } from "lucide-react";
+import { Gift } from "lucide-react";
 
 interface Account {
   id: string; // UUID
@@ -34,44 +35,31 @@ const STORAGE_KEY = "accounts_table_columns";
 
 export default function AccountsPage() {
   useOperatorAuth();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [distributeDialogOpen, setDistributeDialogOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [perPage] = useState(10);
-  const [hasMore, setHasMore] = useState(false);
+  const perPage = 10;
 
-  useEffect(() => {
-    fetchAccounts(currentPage);
-  }, [currentPage]);
-
-  const fetchAccounts = async (page: number) => {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/accounts?page=${page}&perPage=${perPage}`);
+  const {
+    data: accountsData,
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ["accounts", currentPage, perPage],
+    queryFn: async () => {
+      const res = await fetch(`/api/accounts?page=${currentPage}&perPage=${perPage}`);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "获取账户列表失败");
       }
-      const data = await res.json();
-      // Handle paginated response
-      if (data.accounts && data.pagination) {
-        setAccounts(data.accounts);
-        setHasMore(data.pagination.hasMore || false);
-      } else {
-        // Fallback for non-paginated response
-        const accountsList = Array.isArray(data) ? data : data.accounts || [];
-        setAccounts(accountsList);
-        setHasMore(false);
-      }
-    } catch (err: any) {
-      setError(err.message || "加载失败");
-    } finally {
-      setLoading(false);
-    }
-  };
+      return res.json();
+    },
+  });
+
+  const accounts = accountsData?.accounts || [];
+  const hasMore = accountsData?.pagination?.hasMore || false;
+  const error = queryError ? (queryError as Error).message : null;
 
   // 定义列
   const columns = useMemo<ColumnDef<Account>[]>(
@@ -195,7 +183,7 @@ export default function AccountsPage() {
             : "";
         }}
         refreshButton={{
-          onClick: () => fetchAccounts(currentPage),
+          onClick: () => refetch(),
           loading: loading,
         }}
       />
