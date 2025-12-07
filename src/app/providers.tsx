@@ -4,6 +4,7 @@
 import { createClient } from '@/lib/supabaseClient'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect } from 'react'
+import { ThemeProvider } from 'next-themes'
 
 // Valid routes that should handle auth state changes
 const VALID_ROUTES = ["/", "/signup", "/learn", "/stats", "/operator"];
@@ -45,5 +46,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     }
   }, [supabase, router, pathname])
 
-  return <>{children}</>
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      {children}
+    </ThemeProvider>
+  )
 }

@@ -1,4 +1,5 @@
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 interface NextButtonProps {
   onClick?: () => void;
@@ -6,7 +7,7 @@ interface NextButtonProps {
   label?: string;
 }
 
-export function NextButton({ onClick, disabled, label = "下一步" }: NextButtonProps) {
+export const NextButton = ({ onClick, disabled, label = "下一步" }: NextButtonProps) => {
   const router = useRouter();
 
   const handleClick = () => {
@@ -18,14 +19,15 @@ export function NextButton({ onClick, disabled, label = "下一步" }: NextButto
 
   return (
     <div className="text-center">
-      <button
+      <Button
         onClick={handleClick}
         disabled={disabled}
-        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-base font-medium rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+        size="lg"
+        className="px-6 py-3"
       >
         {label}
-      </button>
+      </Button>
     </div>
   );
-}
+};
 

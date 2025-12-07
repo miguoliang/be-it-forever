@@ -19,7 +19,7 @@ export default function RootLayout({
   const shouldShowFooter = pathname && FOOTER_ROUTES.includes(pathname);
 
   return (
-    <html lang="zh" className="dark">
+    <html lang="zh" suppressHydrationWarning>
       <body>
         <Providers>{children}</Providers>
         {shouldShowFooter && <NavigationFooter />}

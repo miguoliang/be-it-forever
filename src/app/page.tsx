@@ -5,6 +5,8 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -88,58 +90,53 @@ export default function SignIn() {
         <h2 className="mb-6 md:mb-8 lg:mb-10 text-gray-600 dark:text-gray-400 text-lg sm:text-xl md:text-2xl lg:text-3xl">
           登录
         </h2>
-        <input
+        <Input
           type="email"
           placeholder="邮箱"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={otpSent}
-          className="w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-base md:text-lg box-border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg"
         />
         {otpSent && (
-          <input
+          <Input
             type="text"
             placeholder="请输入验证码"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
-            className="w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-base md:text-lg box-border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+            className="w-full py-3.5 md:py-4 lg:py-5 px-4 md:px-5 my-2.5 md:my-3 text-base md:text-lg"
           />
         )}
         <div className="my-6 md:my-8">
           {!otpSent ? (
-            <button
+            <Button
               onClick={handleSendOtp}
               disabled={loading}
-              className={`w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 bg-blue-600 dark:bg-blue-700 text-white border-none rounded-lg text-base md:text-lg font-semibold min-h-[48px] md:min-h-[52px] touch-manipulation transition-colors ${
-                loading
-                  ? "cursor-not-allowed opacity-70"
-                  : "cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-500"
-              }`}
+              size="lg"
+              className="w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 min-h-[48px] md:min-h-[52px] touch-manipulation"
             >
               {loading ? "发送中..." : "发送验证码"}
-            </button>
+            </Button>
           ) : (
             <>
-              <button
+              <Button
                 onClick={handleVerifyOtp}
                 disabled={loading}
-                className={`w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 bg-blue-600 dark:bg-blue-700 text-white border-none rounded-lg text-base md:text-lg font-semibold min-h-[48px] md:min-h-[52px] touch-manipulation transition-colors ${
-                  loading
-                    ? "cursor-not-allowed opacity-70"
-                    : "cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-500"
-                }`}
+                size="lg"
+                className="w-full py-3.5 md:py-4 lg:py-5 px-6 md:px-8 min-h-[48px] md:min-h-[52px] touch-manipulation"
               >
                 {loading ? "验证中..." : "验证登录"}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   setOtpSent(false);
                   setOtp("");
                 }}
-                className="w-full mt-3 py-2 px-4 text-gray-600 dark:text-gray-400 text-sm hover:text-gray-900 dark:hover:text-gray-200"
+                variant="ghost"
+                className="w-full mt-3"
               >
                 重新发送验证码
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -147,7 +144,7 @@ export default function SignIn() {
           还没有账号？{" "}
           <Link
             href="/signup"
-            className="text-blue-600 dark:text-blue-400 no-underline font-medium hover:underline"
+            className="text-primary no-underline font-medium hover:underline"
           >
             立即注册
           </Link>

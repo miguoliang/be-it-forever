@@ -17,6 +17,14 @@ import { useState, useEffect, useMemo } from "react";
 import { Paginator } from "@/app/operator/import/components/Paginator";
 import { ColumnSettings } from "@/app/operator/accounts/components/ColumnSettings";
 import type { ColumnConfig } from "@/app/operator/accounts/components/ColumnSettings";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface DataTableProps<TData> {
   data: TData[];
@@ -42,7 +50,7 @@ interface DataTableProps<TData> {
   emptyMessage?: string;
 }
 
-export function DataTable<TData>({
+export const DataTable = <TData extends unknown>({
   data,
   columns,
   loading = false,
@@ -51,7 +59,7 @@ export function DataTable<TData>({
   columnSettings,
   sorting = { enabled: true },
   emptyMessage = "暂无数据",
-}: DataTableProps<TData>) {
+}: DataTableProps<TData>) => {
   const [sortingState, setSortingState] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -247,21 +255,21 @@ export function DataTable<TData>({
         </div>
       )}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-900">
+      <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <Table>
+          <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <th
+                  <TableHead
                     key={header.id}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
                   >
                     {header.isPlaceholder ? null : (
                       <div
                         className={`flex items-center gap-2 ${
                           sorting.enabled && header.column.getCanSort()
-                            ? "cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
+                            ? "cursor-pointer select-none hover:text-foreground"
                             : ""
                         }`}
                         onClick={
@@ -280,50 +288,44 @@ export function DataTable<TData>({
                             const sorted = header.column.getIsSorted();
                             if (sorted === false) return null;
                             return (
-                              <span className="text-gray-400">
+                              <span className="text-muted-foreground">
                                 {sorted === "asc" ? " ↑" : sorted === "desc" ? " ↓" : " ↕"}
                               </span>
                             );
                           })()}
                       </div>
                     )}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          </TableHeader>
+          <TableBody>
             {table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td
+              <TableRow>
+                <TableCell
                   colSpan={tableColumns.length}
-                  className="px-6 py-4 text-center text-gray-500 dark:text-gray-400"
+                  className="h-24 text-center"
                 >
                   {emptyMessage}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
+                <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white"
-                    >
+                    <TableCell key={cell.id} className="px-6 py-4 whitespace-nowrap">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
                       )}
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
       {pagination.enabled &&
         data.length > 0 &&
@@ -340,7 +342,7 @@ export function DataTable<TData>({
       </div>
     </div>
   );
-}
+};
 
 // 导出列设置组件供外部使用
 export { ColumnSettings };

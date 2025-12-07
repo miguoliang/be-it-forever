@@ -1,18 +1,21 @@
+import { Button } from "@/components/ui/button";
+
 interface ImportButtonProps {
   onClick: () => void;
   loading: boolean;
   disabled: boolean;
 }
 
-export function ImportButton({ onClick, loading, disabled }: ImportButtonProps) {
+export const ImportButton = ({ onClick, loading, disabled }: ImportButtonProps) => {
   return (
-    <button
+    <Button
       onClick={onClick}
-      disabled={disabled}
-      className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-base font-medium rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled={disabled || loading}
+      size="lg"
+      className="px-6 py-3"
     >
       {loading ? "导入中..." : "开始导入"}
-    </button>
+    </Button>
   );
-}
+};
 

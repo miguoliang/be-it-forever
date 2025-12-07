@@ -15,7 +15,7 @@ export default function NotFound() {
         </p>
         <Link
           href="/learn"
-          className="px-8 py-4 bg-blue-600 dark:bg-blue-700 text-white rounded-lg text-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+          className="px-8 py-4 bg-primary text-primary-foreground rounded-lg text-lg font-semibold hover:bg-primary/90 transition-colors"
         >
           返回学习页面
         </Link>

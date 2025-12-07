@@ -1,3 +1,6 @@
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 interface FileInputProps {
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   fileName: string | null;
@@ -5,15 +8,19 @@ interface FileInputProps {
   error: string | null;
 }
 
-export function FileInput({ onFileChange, fileName, recordCount, error }: FileInputProps) {
+export const FileInput = ({ onFileChange, fileName, recordCount, error }: FileInputProps) => {
   return (
     <div className="mb-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-        <input
+        <Label htmlFor="file-upload" className="sr-only">
+          选择 CSV 文件
+        </Label>
+        <Input
+          id="file-upload"
           type="file"
           accept=".csv"
           onChange={onFileChange}
-          className="w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 text-sm cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 transition"
+          className="w-full border-2 border-dashed border-input cursor-pointer hover:border-primary transition"
         />
         {fileName && (
           <p className="text-gray-600 dark:text-gray-400 mt-4 text-sm text-center">
@@ -26,5 +33,5 @@ export function FileInput({ onFileChange, fileName, recordCount, error }: FileIn
       </div>
     </div>
   );
-}
+};
 

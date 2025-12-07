@@ -35,7 +35,7 @@ export function ImportSidebar({
             {fileName && (
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <p className="text-gray-900 dark:text-white font-semibold mb-1">当前文件</p>
-                <p className="text-indigo-600 dark:text-indigo-400 break-words">{fileName}</p>
+                <p className="text-primary break-words">{fileName}</p>
                 {recordCount !== null && (
                   <p className="text-gray-500 dark:text-gray-500 mt-1">{recordCount} 条记录</p>
                 )}
@@ -58,7 +58,7 @@ export function ImportSidebar({
             {fileName && (
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <p className="text-gray-900 dark:text-white font-semibold mb-1">文件信息</p>
-                <p className="text-indigo-600 dark:text-indigo-400 break-words">{fileName}</p>
+                <p className="text-primary break-words">{fileName}</p>
                 {recordCount !== null && (
                   <p className="text-gray-500 dark:text-gray-500 mt-1">{recordCount} 条记录</p>
                 )}

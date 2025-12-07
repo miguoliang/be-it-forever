@@ -109,7 +109,7 @@ export function KnowledgeTable() {
                     window.speechSynthesis.speak(utter);
                   }
                 }}
-                className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded transition-colors"
+                className="p-1.5 text-primary hover:text-primary/80 hover:bg-accent rounded transition-colors"
                 aria-label="播放单词"
                 title="播放单词"
               >

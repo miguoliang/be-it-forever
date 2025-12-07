@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+
 interface PaginatorProps {
   currentPage: number;
   totalPages: number;
@@ -58,13 +60,14 @@ export function Paginator({
       </div>
 
       <div className="flex items-center gap-2">
-        <button
+        <Button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-3 md:px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          variant="outline"
+          size="sm"
         >
           上一页
-        </button>
+        </Button>
 
         <div className="flex items-center gap-1">
           {getPageNumbers().map((page, idx) => {
@@ -83,28 +86,27 @@ export function Paginator({
             const isActive = pageNum === currentPage;
 
             return (
-              <button
+              <Button
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
-                className={`px-3 md:px-4 py-2 min-w-[2.5rem] md:min-w-[3rem] text-sm font-medium rounded-md transition ${
-                  isActive
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                    : "text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                }`}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                className="min-w-[2.5rem] md:min-w-[3rem]"
               >
                 {pageNum}
-              </button>
+              </Button>
             );
           })}
         </div>
 
-        <button
+        <Button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="px-3 md:px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          variant="outline"
+          size="sm"
         >
           下一页
-        </button>
+        </Button>
       </div>
     </div>
   );
