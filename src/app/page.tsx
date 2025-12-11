@@ -23,14 +23,9 @@ export default function SignIn() {
 
     setLoading(true);
     try {
-      // Supabase signInWithOtp 默认发送 magic link
-      // 要发送 OTP 验证码，需要在 Dashboard 中配置 Email 模板包含验证码
-      // 或者使用 Admin API 发送自定义 OTP
-      // 当前实现：发送 magic link，用户也可以输入邮件中的验证码（如果邮件模板包含）
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
           shouldCreateUser: true,
         },
       });
@@ -63,7 +58,7 @@ export default function SignIn() {
 
       setOtpSent(true);
       setLoading(false);
-      alert("验证码已发送到您的邮箱，请查收。如果邮件中只有链接，请点击链接登录，或检查邮件模板配置。");
+      alert("验证码已发送到您的邮箱，请查收。");
     } catch (err) {
       console.error("OTP Exception:", err);
       const errorMessage = err instanceof Error ? err.message : "发送验证码失败，请检查网络连接";

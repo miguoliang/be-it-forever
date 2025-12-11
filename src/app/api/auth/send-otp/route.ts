@@ -11,8 +11,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createRouteHandlerClient();
 
-    // 使用 signInWithOtp 发送 OTP
-    // 注意：Supabase 默认发送 magic link，要发送 OTP 验证码需要在 Dashboard 配置
+    // 使用 signInWithOtp 发送 OTP 验证码
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
