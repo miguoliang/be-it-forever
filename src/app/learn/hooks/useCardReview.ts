@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { reviewCard as reviewCardAPI, fetchDueCards } from "@/lib/api/cards";
+import { useMutation } from "@tanstack/react-query";
+import { reviewCard as reviewCardAPI } from "@/lib/api/cards";
 import type { Card } from "../types";
 
 interface UseCardReviewParams {
@@ -17,8 +17,6 @@ export function useCardReview({
   setCards,
   resetFlip,
 }: UseCardReviewParams) {
-  const queryClient = useQueryClient();
-
   const { mutate: reviewCard, isPending } = useMutation({
     mutationFn: ({ cardId, quality }: { cardId: number; quality: number }) =>
       reviewCardAPI(cardId, quality),
@@ -48,30 +46,12 @@ export function useCardReview({
 
       return { previousCards };
     },
-    // After successful review, refetch due cards to get updated list
-    onSuccess: async () => {
-      // Refetch due cards to get the updated list (reviewed card will be excluded)
-      // Use fetchQuery to get fresh data
-      const updatedCards = await queryClient.fetchQuery({
-        queryKey: ["cards", "due"],
-        queryFn: fetchDueCards,
-      });
-
-      // Update local cards state with the refetched data
-      // This ensures we get any new cards that are now due
-      if (updatedCards && updatedCards.length > 0) {
-        setCards(updatedCards);
-        // Reset to first card if current index is out of bounds
-        if (currentIndex >= updatedCards.length) {
-          setCurrentIndex(() => 0);
-        }
-        resetFlip();
-      } else {
-        // No more cards due
-        setCards([]);
-        setCurrentIndex(() => 0);
-        resetFlip();
-      }
+    // After successful review, no refetch needed
+    // The card was already removed optimistically, and its next_review_date
+    // is set to the future, so it won't appear in future due queries
+    onSuccess: () => {
+      // Card already removed from UI in onMutate
+      // No additional action needed
     },
     // If mutation fails, rollback to previous state
     onError: (error, variables, context) => {
