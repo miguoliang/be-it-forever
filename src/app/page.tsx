@@ -6,6 +6,11 @@ import { createClient } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import {
+  isRateLimitError,
+  getRateLimitErrorMessage,
+} from "@/lib/utils/errorHandling";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -17,7 +22,7 @@ export default function SignIn() {
 
   const handleSendOtp = async () => {
     if (!email) {
-      alert("请输入邮箱");
+      toast.error("请输入邮箱");
       return;
     }
 
@@ -33,23 +38,10 @@ export default function SignIn() {
       if (error) {
         console.error("OTP Error:", error);
         
-        // Handle rate limiting error with friendly message
-        if (error.message.includes("For security purposes, you can only request this after")) {
-          const match = error.message.match(/(\d+)\s+seconds?/);
-          const seconds = match ? parseInt(match[1], 10) : 30;
-          const minutes = Math.floor(seconds / 60);
-          const remainingSeconds = seconds % 60;
-          
-          let waitTime = "";
-          if (minutes > 0) {
-            waitTime = `${minutes}分${remainingSeconds > 0 ? `${remainingSeconds}秒` : ""}`;
-          } else {
-            waitTime = `${seconds}秒`;
-          }
-          
-          alert(`为了您的账户安全，请等待 ${waitTime} 后再重新发送验证码。\n\n如果您的邮箱没有收到验证码，请检查垃圾邮件文件夹。`);
+        if (isRateLimitError(error.message)) {
+          toast.error(getRateLimitErrorMessage(error.message, "重新发送验证码"));
         } else {
-          alert(error.message);
+          toast.error(error.message);
         }
         
         setLoading(false);
@@ -58,28 +50,15 @@ export default function SignIn() {
 
       setOtpSent(true);
       setLoading(false);
-      alert("验证码已发送到您的邮箱，请查收。");
+      toast.success("验证码已发送到您的邮箱，请查收。");
     } catch (err) {
       console.error("OTP Exception:", err);
       const errorMessage = err instanceof Error ? err.message : "发送验证码失败，请检查网络连接";
       
-      // Handle rate limiting in catch block as well
-      if (errorMessage.includes("For security purposes, you can only request this after")) {
-        const match = errorMessage.match(/(\d+)\s+seconds?/);
-        const seconds = match ? parseInt(match[1], 10) : 30;
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        
-        let waitTime = "";
-        if (minutes > 0) {
-          waitTime = `${minutes}分${remainingSeconds > 0 ? `${remainingSeconds}秒` : ""}`;
-        } else {
-          waitTime = `${seconds}秒`;
-        }
-        
-        alert(`为了您的账户安全，请等待 ${waitTime} 后再重新发送验证码。\n\n如果您的邮箱没有收到验证码，请检查垃圾邮件文件夹。`);
+      if (isRateLimitError(errorMessage)) {
+        toast.error(getRateLimitErrorMessage(errorMessage, "重新发送验证码"));
       } else {
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
       
       setLoading(false);
@@ -88,7 +67,7 @@ export default function SignIn() {
 
   const handleVerifyOtp = async () => {
     if (!otp) {
-      alert("请输入验证码");
+      toast.error("请输入验证码");
       return;
     }
 
@@ -100,23 +79,10 @@ export default function SignIn() {
     });
 
     if (error) {
-      // Handle rate limiting error for OTP verification as well
-      if (error.message.includes("For security purposes, you can only request this after")) {
-        const match = error.message.match(/(\d+)\s+seconds?/);
-        const seconds = match ? parseInt(match[1], 10) : 30;
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        
-        let waitTime = "";
-        if (minutes > 0) {
-          waitTime = `${minutes}分${remainingSeconds > 0 ? `${remainingSeconds}秒` : ""}`;
-        } else {
-          waitTime = `${seconds}秒`;
-        }
-        
-        alert(`为了您的账户安全，请等待 ${waitTime} 后再重试。`);
+      if (isRateLimitError(error.message)) {
+        toast.error(getRateLimitErrorMessage(error.message, "重试"));
       } else {
-        alert(error.message);
+        toast.error(error.message);
       }
       setLoading(false);
       return;

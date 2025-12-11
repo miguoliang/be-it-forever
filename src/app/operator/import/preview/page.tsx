@@ -8,6 +8,7 @@ import { PreviewTable } from "../components/PreviewTable";
 import { ImportButton } from "../components/ImportButton";
 import { BackButton } from "../components/BackButton";
 import { getCSVData, clearCSVData } from "../utils/csvStorage";
+import { toast } from "sonner";
 
 export default function PreviewPage() {
   useOperatorAuth();
@@ -25,20 +26,20 @@ export default function PreviewPage() {
 
   const handleImport = async () => {
     if (!csvData) {
-      alert("请先选择文件");
+      toast.error("请先选择文件");
       return;
     }
 
     try {
       const result = await importWords(csvData.data);
       if (result.success) {
-        alert(`成功导入 ${result.count} 个单词！`);
+        toast.success(`成功导入 ${result.count} 个单词！`);
         clearCSVData();
         router.push("/operator/import");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "导入失败";
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 

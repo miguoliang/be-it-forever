@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { fetchDueCards } from "@/lib/api/cards";
@@ -18,10 +18,12 @@ export function useCards() {
     refetchOnReconnect: false,
   });
 
-  // Handle 401 error by redirecting
-  if (error && (error as Error).message === "未登录") {
-    router.push("/");
-  }
+  // Handle 401 error by redirecting - moved to useEffect to avoid side effects during render
+  useEffect(() => {
+    if (error && (error as Error).message === "未登录") {
+      router.push("/");
+    }
+  }, [error, router]);
 
   // Use local cards if set, otherwise use fetched cards
   const cards = localCards !== null ? localCards : fetchedCards;

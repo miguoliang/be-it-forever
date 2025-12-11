@@ -6,14 +6,29 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { quality } = await request.json() // 0-5
-  const supabase = await createRouteHandlerClient()
-  const { id } = await params
+  try {
+    const { quality } = await request.json() // 0-5
+    
+    // Validate quality parameter
+    if (typeof quality !== 'number' || quality < 0 || quality > 5) {
+      return NextResponse.json(
+        { error: '评分必须在 0-5 之间' },
+        { status: 400 }
+      )
+    }
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 })
+    const supabase = await createRouteHandlerClient()
+    const { id } = await params
 
-  const cardId = parseInt(id)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const cardId = parseInt(id, 10)
+    if (isNaN(cardId)) {
+      return NextResponse.json({ error: '无效的卡片ID' }, { status: 400 })
+    }
 
   // 1. 先查出当前卡片状态
   const { data: card, error: fetchError } = await supabase
@@ -63,11 +78,31 @@ export async function POST(
     })
     .eq('id', cardId)
 
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
+    if (updateError) {
+      console.error('Update card error:', updateError)
+      return NextResponse.json(
+        { error: updateError.message },
+        { status: 500 }
+      )
+    }
 
-  await supabase
-    .from('review_history')
-    .insert({ account_card_id: cardId, quality })
+    const { error: historyError } = await supabase
+      .from('review_history')
+      .insert({ account_card_id: cardId, quality })
 
-  return NextResponse.json({ success: true, nextReview: nextReview.toISOString() })
+    if (historyError) {
+      console.error('Insert review history error:', historyError)
+      // Don't fail the request if history insert fails, but log it
+    }
+
+    return NextResponse.json({
+      success: true,
+      nextReview: nextReview.toISOString(),
+    })
+  } catch (error) {
+    console.error('Review card error:', error)
+    const errorMessage =
+      error instanceof Error ? error.message : '复习失败'
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
+  }
 }

@@ -6,7 +6,19 @@ export async function proxy(req: NextRequest) {
     const { supabase, res } = createMiddlewareClient(req)
 
     // Refresh session if expired - required for Server Components
-    await supabase.auth.getSession()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    const pathname = req.nextUrl.pathname
+
+    // If user is not signed in and trying to access protected routes (not root)
+    // Allow access to root path ('/') for sign-in page
+    if (!user && pathname !== '/') {
+      const redirectUrl = req.nextUrl.clone()
+      redirectUrl.pathname = '/'
+      return NextResponse.redirect(redirectUrl)
+    }
 
     // Add CORS headers for Supabase API calls
     res.headers.set('Access-Control-Allow-Origin', '*')
@@ -17,7 +29,7 @@ export async function proxy(req: NextRequest) {
   } catch (error) {
     // If there's an error (e.g., during prerendering), just continue
     // This prevents crashes during static generation
-    console.error(error)
+    console.error('Proxy error:', error)
     const res = NextResponse.next({ request: req })
     // Add CORS headers even on error
     res.headers.set('Access-Control-Allow-Origin', '*')
@@ -36,8 +48,9 @@ export const config = {
      * - _next/image (image optimization files)
      * - _not-found (Next.js not-found page)
      * - favicon.ico (favicon file)
+     * - static assets (images, svg, etc.)
      */
-    '/((?!api|_next/static|_next/image|_not-found|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|_not-found|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
 

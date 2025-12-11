@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface DistributeCardsDialogProps {
   open: boolean;
@@ -37,7 +38,7 @@ export const DistributeCardsDialog = ({
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       onSuccess?.();
       onOpenChange(false);
-      alert(`成功分配 ${data.count} 张卡片给 ${accountUsername}`);
+      toast.success(`成功分配 ${data.count} 张卡片给 ${accountUsername}`);
     },
   });
 
