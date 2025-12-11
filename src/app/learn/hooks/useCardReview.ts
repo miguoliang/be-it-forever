@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { reviewCard as reviewCardAPI } from "@/lib/api/cards";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils/errorUtils";
 import type { Card } from "../types";
 
 interface UseCardReviewParams {
@@ -65,7 +66,7 @@ export function useCardReview({
       if (context?.previousCards) {
         setCards(context.previousCards);
       }
-      toast.error((error as Error).message || "复习失败");
+      toast.error(getErrorMessage(error) || "复习失败");
     },
   });
 

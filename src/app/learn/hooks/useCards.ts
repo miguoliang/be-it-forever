@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { fetchDueCards } from "@/lib/api/cards";
+import { hasErrorMessage } from "@/lib/utils/errorUtils";
 import type { Card } from "../types";
 
 export function useCards() {
@@ -20,7 +21,7 @@ export function useCards() {
 
   // Handle 401 error by redirecting - moved to useEffect to avoid side effects during render
   useEffect(() => {
-    if (error && (error as Error).message === "未登录") {
+    if (error && hasErrorMessage(error, "未登录")) {
       router.push("/");
     }
   }, [error, router]);

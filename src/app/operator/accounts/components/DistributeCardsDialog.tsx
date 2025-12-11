@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils/errorUtils";
 
 interface DistributeCardsDialogProps {
   open: boolean;
@@ -58,7 +59,7 @@ export const DistributeCardsDialog = ({
 
         {error && (
           <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-            {(error as Error).message || "分配失败"}
+            {getErrorMessage(error) || "分配失败"}
           </div>
         )}
 

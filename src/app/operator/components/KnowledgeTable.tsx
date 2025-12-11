@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchKnowledges, type Knowledge } from "@/lib/api/knowledge";
 import { DataTable, ColumnConfig } from "@/components/Table";
 import { ColumnDef } from "@tanstack/react-table";
+import { getErrorMessage } from "@/lib/utils/errorUtils";
 
 // 默认列配置
 const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -29,7 +30,7 @@ export function KnowledgeTable() {
     queryFn: fetchKnowledges,
   });
 
-  const error = queryError ? (queryError as Error).message : null;
+  const error = queryError ? getErrorMessage(queryError) : null;
 
   // 定义列
   const columns = useMemo<ColumnDef<Knowledge>[]>(

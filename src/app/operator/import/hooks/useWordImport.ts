@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { importWords as importWordsAPI, type ImportResult } from "@/lib/api/import";
+import { getErrorMessage } from "@/lib/utils/errorUtils";
 import type { CSVData } from "./useCSVParser";
 
 export function useWordImport() {
@@ -9,7 +10,7 @@ export function useWordImport() {
 
   return {
     loading,
-    error: error ? (error as Error).message : null,
+    error: error ? getErrorMessage(error) : null,
     importWords,
   };
 }

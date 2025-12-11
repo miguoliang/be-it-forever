@@ -3,12 +3,13 @@
 
 import { createRouteHandlerClient } from "@/lib/supabaseServer";
 import { NextRequest, NextResponse } from "next/server";
+import type { WordData } from "@/app/operator/import/types";
 
 export async function POST(req: NextRequest) {
   try {
-    let words;
+    let words: unknown;
     try {
-      const body = await req.json();
+      const body = await req.json() as { words?: unknown };
       words = body.words;
     } catch {
       return NextResponse.json(
@@ -46,14 +47,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // words 已经是标准化的 WordData 格式
+    // Validate and transform words to knowledge data format
     const knowledgeData = words
-      .map((w: { name?: string; description?: string; metadata?: Record<string, unknown> }) => ({
-        name: w.name?.trim() || "",
-        description: w.description?.trim() || "",
-        metadata: w.metadata || {},
-      }))
-      .filter((k: { name: string }) => k.name && k.name.trim() !== "");
+      .map((w: unknown): { name: string; description: string; metadata: Record<string, unknown> } | null => {
+        // Type guard for WordData
+        if (
+          typeof w === "object" &&
+          w !== null &&
+          "name" in w &&
+          typeof (w as { name: unknown }).name === "string"
+        ) {
+          const word = w as WordData;
+          const name = word.name?.trim();
+          if (!name) return null;
+          
+          return {
+            name,
+            description: typeof word.description === "string" ? word.description.trim() : "",
+            metadata: typeof word.metadata === "object" && word.metadata !== null
+              ? (word.metadata as Record<string, unknown>)
+              : {},
+          };
+        }
+        return null;
+      })
+      .filter((k): k is { name: string; description: string; metadata: Record<string, unknown> } => k !== null);
 
     if (knowledgeData.length === 0) {
       return NextResponse.json(

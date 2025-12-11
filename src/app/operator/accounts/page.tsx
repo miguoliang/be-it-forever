@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { DistributeCardsDialog } from "./components/DistributeCardsDialog";
 import { Paginator } from "../import/components/Paginator";
 import { Gift } from "lucide-react";
+import { getErrorMessage } from "@/lib/utils/errorUtils";
 
 interface Account {
   id: string; // UUID
@@ -53,7 +54,7 @@ export default function AccountsPage() {
 
   const accounts = accountsData?.accounts || [];
   const hasMore = accountsData?.pagination?.hasMore || false;
-  const error = queryError ? (queryError as Error).message : null;
+  const error = queryError ? getErrorMessage(queryError) : null;
 
   // 定义列
   const columns = useMemo<ColumnDef<Account>[]>(
