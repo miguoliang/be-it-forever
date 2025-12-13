@@ -17,7 +17,7 @@ sequenceDiagram
     participant PreviewPage as Preview Page<br/>(/operator/import/preview)
     participant useWordImport as useWordImport Hook<br/>(React Query)
     participant ImportAPI as Import API Client<br/>(/lib/api/import.ts)
-    participant ImportRoute as Import API Route<br/>(/api/import-words)
+    participant ImportRoute as Import API Route<br/>(/api/knowledge)
     participant SupabaseServer as Supabase Server<br/>(Database)
 
     Note over Operator,SupabaseServer: Step 1: Authentication & File Selection
@@ -92,7 +92,7 @@ sequenceDiagram
             PreviewPage->>useWordImport: handleImport()
             useWordImport->>useWordImport: importWords mutation (onMutate)
             useWordImport->>ImportAPI: importWordsAPI(previewData)
-            ImportAPI->>ImportRoute: POST /api/import-words<br/>{ words: previewData.rows }
+            ImportAPI->>ImportRoute: POST /api/knowledge<br/>{ items: previewData.rows }
             
             ImportRoute->>SupabaseServer: getUser() (auth check)
             
@@ -183,11 +183,11 @@ sequenceDiagram
 ### Server-Side Processing
 
 #### Import API Route
-- **Route**: `POST /api/import-words`
-- **Location**: `src/app/api/import-words/route.ts`
+- **Route**: `POST /api/knowledge`
+- **Location**: `src/app/api/knowledge/route.ts`
 - **Functionality**:
   - **Authentication**: Validates operator role (`user_metadata.role === "operator"`)
-  - **Data Normalization**: Maps incoming words to knowledge table format
+  - **Data Normalization**: Maps incoming items to knowledge table format
     - Trims whitespace from name and description
     - Preserves metadata object
     - Filters out entries with empty names
