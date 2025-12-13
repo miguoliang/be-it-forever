@@ -41,9 +41,6 @@ export async function POST(req: NextRequest) {
         items = body;
       } else if (body && Array.isArray(body.items)) {
         items = body.items;
-      } else if (body && Array.isArray(body.words)) {
-        // Backward compatibility for "words" key
-        items = body.words; 
       } else {
          return NextResponse.json(
           { error: "Invalid request format. Expected an array of items." },
