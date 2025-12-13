@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { reviewCard as reviewCardAPI } from "@/lib/api/cards";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
+import { nowISO } from "@/lib/utils/dateUtils";
 import type { Card } from "../types";
 
 interface UseCardReviewParams {
@@ -30,7 +31,7 @@ export function useCardReview({
       const currentIdx = currentIndex;
 
       // Mark the card as reviewed and set last_reviewed_at to now (today)
-      const now = new Date().toISOString();
+      const now = nowISO();
       const updatedCards = cards.map((card) =>
         card.id === cardId
           ? { ...card, reviewed: true, last_reviewed_at: now }

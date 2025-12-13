@@ -1,5 +1,6 @@
-import { createRouteHandlerClient } from "@/lib/supabaseServer";
-import { NextRequest, NextResponse } from "next/server";
+import { createRouteHandlerClient } from '@/lib/supabaseServer';
+import { NextResponse } from 'next/server';
+import { nowISO } from '@/lib/utils/dateUtils';
 
 export async function POST(
   req: NextRequest,
@@ -95,7 +96,8 @@ export async function POST(
     }
 
     // Prepare account cards data for all knowledge items
-    const now = new Date().toISOString();
+    const accountCardsToInsert: any[] = [];
+    const now = nowISO();
     const accountCards = knowledges.map((knowledge: { code: string }) => ({
       account_id: accountId,
       knowledge_code: knowledge.code,

@@ -6,6 +6,7 @@ import { fetchKnowledges, type Knowledge } from "@/lib/api/knowledge";
 import { DataTable, ColumnConfig } from "@/components/Table";
 import { ColumnDef } from "@tanstack/react-table";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
+import { formatDate } from "@/lib/utils/dateUtils";
 
 // 默认列配置
 const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -110,7 +111,7 @@ export function KnowledgeTable() {
         header: "创建时间",
         cell: ({ row }) => {
           const date = row.getValue("created_at") as string;
-          return new Date(date).toLocaleDateString("zh-CN");
+          return formatDate(date, "YYYY-MM-DD");
         },
       },
       {
@@ -118,7 +119,7 @@ export function KnowledgeTable() {
         header: "更新时间",
         cell: ({ row }) => {
           const date = row.getValue("updated_at") as string;
-          return new Date(date).toLocaleDateString("zh-CN");
+          return formatDate(date, "YYYY-MM-DD");
         },
       },
     ],

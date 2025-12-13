@@ -1,7 +1,7 @@
 // src/app/api/cards/due/route.ts
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { NextResponse } from 'next/server'
-import { getTodayDateRange } from '@/lib/utils/dateUtils'
+import { getTodayDateRange, nowISO } from '@/lib/utils/dateUtils'
 
 export async function GET() {
   try {
@@ -62,7 +62,7 @@ export async function GET() {
         last_reviewed_at
       `)
       .eq('account_id', user.id)
-      .lte('next_review_date', new Date().toISOString())
+      .lte('next_review_date', nowISO())
       .order('next_review_date', { ascending: true })
       .limit(remainingSlots)
 

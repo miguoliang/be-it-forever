@@ -11,6 +11,7 @@ import { DistributeCardsDialog } from "./components/DistributeCardsDialog";
 import { Paginator } from "../import/components/Paginator";
 import { Gift } from "lucide-react";
 import { getErrorMessage } from "@/lib/utils/errorUtils";
+import { formatDate } from "@/lib/utils/dateUtils";
 
 interface Account {
   id: string; // UUID
@@ -104,7 +105,7 @@ export default function AccountsPage() {
           if (!lastSignIn) {
             return <span className="text-muted-foreground">从未登录</span>;
           }
-          return new Date(lastSignIn).toLocaleString("zh-CN");
+          return formatDate(lastSignIn);
         },
       },
       {
@@ -112,7 +113,7 @@ export default function AccountsPage() {
         header: "创建时间",
         cell: ({ row }) => {
           const date = row.getValue("created_at") as string;
-          return new Date(date).toLocaleString("zh-CN");
+          return formatDate(date);
         },
       },
       {

@@ -1,7 +1,7 @@
 // src/app/api/cards/[id]/review/route.ts
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { NextResponse } from 'next/server'
-import { getTodayDateRange } from '@/lib/utils/dateUtils'
+import { getTodayDateRange, nowISO } from '@/lib/utils/dateUtils'
 
 export async function POST(
   request: Request,
@@ -108,7 +108,7 @@ export async function POST(
       interval_days: newInterval,
       repetitions: newReps,
       next_review_date: nextReview.toISOString(),
-      last_reviewed_at: new Date().toISOString(),
+      last_reviewed_at: nowISO(),
     })
     .eq('id', cardId)
 

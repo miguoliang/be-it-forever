@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabaseClient'
+import { getDaysAgoISO, nowISO, toDateString } from '@/lib/utils/dateUtils'
 
 export interface StatsData {
   total: number;
@@ -43,7 +44,7 @@ export function useStats() {
         .from('account_cards')
         .select('*', { count: 'exact', head: true })
         .eq('account_id', user.id)
-        .lte('next_review_date', new Date().toISOString())
+        .lte('next_review_date', nowISO())
 
       // 最近30天热力图
       // Join account_cards to filter by user.id
@@ -51,14 +52,14 @@ export function useStats() {
         .from('review_history')
         .select('reviewed_at, account_cards!inner(account_id)')
         .eq('account_cards.account_id', user.id)
-        .gte('reviewed_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .gte('reviewed_at', getDaysAgoISO(30))
       
       const history = historyData || []
 
       const heatMap = Array(30).fill(0).map((_, i) => {
         const date = new Date()
         date.setDate(date.getDate() - (29 - i))
-        const dateStr = date.toISOString().split('T')[0]
+        const dateStr = toDateString(date)
         const count = history.filter((h: { reviewed_at: string }) => h.reviewed_at.startsWith(dateStr)).length
         return { date: dateStr, count }
       })
