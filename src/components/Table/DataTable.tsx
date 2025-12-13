@@ -71,16 +71,21 @@ export const DataTable = <TData,>({
   getRowClassName,
   refreshButton,
 }: DataTableProps<TData>) => {
+  // Destructure with safe defaults to avoid repetitive optional chaining
+  const { enabled: paginationEnabled = true, pageSize: initialPageSize = 10 } = pagination || {};
+  const { enabled: columnsEnabled = false, defaultColumns } = columnSettings || {};
+  const { enabled: sortingEnabled = true } = sorting || {};
+
   const [sortingState, setSortingState] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [paginationState, setPaginationState] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: pagination.pageSize || 10,
+    pageSize: initialPageSize,
   });
 
-  // 从 columns 生成列配置的辅助函数
-  const generateColumnConfigs = useMemo(() => {
+  // Helper: Generate column configs from current columns
+  const generatedConfigs = useMemo(() => {
     return columns.map((col) => {
       const accessorKey =
         "accessorKey" in col && typeof col.accessorKey === "string"
@@ -101,93 +106,50 @@ export const DataTable = <TData,>({
     });
   }, [columns]);
 
-  // 列设置状态 - 如果没有提供 defaultColumns，从 columns 中生成
-  const [columnConfigs, setColumnConfigs] = useState<ColumnConfig[]>(() => {
-    if (columnSettings?.enabled) {
-      if (columnSettings.defaultColumns && columnSettings.defaultColumns.length > 0) {
-        // 如果有默认列配置，直接使用它
-        return columnSettings.defaultColumns;
-      } else {
-        // 如果没有默认列配置，从 columns 中生成
-        const generatedConfigs: ColumnConfig[] = columns.map((col) => {
-          const accessorKey =
-            "accessorKey" in col && typeof col.accessorKey === "string"
-              ? col.accessorKey
-              : undefined;
-          const colId = (col.id as string | undefined) || accessorKey || "";
-          const header =
-            typeof col.header === "string"
-              ? col.header
-              : col.header
-              ? String(col.header)
-              : colId;
-          return {
-            key: colId,
-            label: header,
-            visible: true,
-          };
-        });
-        return generatedConfigs;
-      }
-    }
-    return [];
-  });
+  // Initialize or update column configs
+  const [columnConfigs, setColumnConfigs] = useState<ColumnConfig[]>(() => 
+    (columnsEnabled && defaultColumns && defaultColumns.length > 0) ? defaultColumns : []
+  );
 
-  // 当 columns 变化时，更新列配置（如果没有 defaultColumns 且列配置为空）
+  // Sync column configs when columns change, if strictly necessary and not overridden
   useEffect(() => {
-    if (
-      columnSettings?.enabled &&
-      (!columnSettings.defaultColumns || columnSettings.defaultColumns.length === 0) &&
-      columnConfigs.length === 0 &&
-      generateColumnConfigs.length > 0
-    ) {
-      setColumnConfigs(generateColumnConfigs);
+    if (columnsEnabled && (!defaultColumns || defaultColumns.length === 0) && columnConfigs.length === 0 && generatedConfigs.length > 0) {
+      setColumnConfigs(generatedConfigs);
     }
-  }, [columns, columnSettings, generateColumnConfigs, columnConfigs.length]);
+  }, [columnsEnabled, defaultColumns, columnConfigs.length, generatedConfigs]);
 
-  // 根据列设置更新列可见性
+  // Sync visibility with configs
   useEffect(() => {
-    if (columnSettings?.enabled && columnConfigs.length > 0) {
+    if (columnsEnabled && columnConfigs.length > 0) {
       const visibility: VisibilityState = {};
       columnConfigs.forEach((config) => {
         visibility[config.key] = config.visible;
       });
       setColumnVisibility(visibility);
     }
-  }, [columnConfigs, columnSettings]);
+  }, [columnConfigs, columnsEnabled]);
 
-  // 转换列配置为 TanStack Table 的列定义格式
+  // Filter columns based on visibility settings
   const tableColumns = useMemo(() => {
-    if (columnSettings?.enabled && columnConfigs.length > 0) {
-      // 根据列配置过滤和排序列
-      const configMap = new Map(
-        columnConfigs.map((config) => [config.key, config])
-      );
+    if (columnsEnabled && columnConfigs.length > 0) {
+      const configMap = new Map(columnConfigs.map((config) => [config.key, config]));
       return columns.filter((col) => {
-        // 安全地访问 accessorKey，因为 ColumnDef 是联合类型
-        const accessorKey =
-          "accessorKey" in col && typeof col.accessorKey === "string"
-            ? col.accessorKey
-            : undefined;
+        const accessorKey = "accessorKey" in col && typeof col.accessorKey === "string" ? col.accessorKey : undefined;
         const colId = (col.id as string | undefined) || accessorKey || "";
         const config = configMap.get(colId);
-        // 如果配置中没有找到该列，默认显示
-        if (!config) return true;
-        return config.visible !== false;
+        return config ? config.visible !== false : true;
       });
     }
     return columns;
-  }, [columns, columnConfigs, columnSettings]);
+  }, [columns, columnConfigs, columnsEnabled]);
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table API returns functions that cannot be memoized safely
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: pagination.enabled
-      ? getPaginationRowModel()
-      : undefined,
-    getSortedRowModel: sorting.enabled ? getSortedRowModel() : undefined,
+    getPaginationRowModel: paginationEnabled ? getPaginationRowModel() : undefined,
+    getSortedRowModel: sortingEnabled ? getSortedRowModel() : undefined,
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSortingState,
     onColumnFiltersChange: setColumnFilters,
@@ -199,7 +161,7 @@ export const DataTable = <TData,>({
       columnVisibility,
       pagination: paginationState,
     },
-    manualPagination: false, // 客户端分页
+    manualPagination: false,
   });
 
   if (loading) {
@@ -218,12 +180,12 @@ export const DataTable = <TData,>({
     );
   }
 
-  const totalPages = Math.ceil(data.length / (pagination.pageSize || 10));
+  const totalPages = Math.ceil(data.length / initialPageSize);
   const currentPage = paginationState.pageIndex + 1;
 
   return (
     <div className="space-y-4">
-      {(columnSettings?.enabled || refreshButton) && (
+      {(columnsEnabled || refreshButton) && (
         <div className="flex justify-end gap-2">
           {refreshButton && (
             <Button
@@ -237,7 +199,7 @@ export const DataTable = <TData,>({
               刷新
             </Button>
           )}
-          {columnSettings?.enabled && (
+          {columnsEnabled && (
             <ColumnSettings
               columns={columnConfigs}
               onColumnsChange={setColumnConfigs}
@@ -259,12 +221,12 @@ export const DataTable = <TData,>({
                     {header.isPlaceholder ? null : (
                       <div
                         className={`flex items-center gap-2 ${
-                          sorting.enabled && header.column.getCanSort()
+                          sortingEnabled && header.column.getCanSort()
                             ? "cursor-pointer select-none hover:text-foreground"
                             : ""
                         }`}
                         onClick={
-                          sorting.enabled && header.column.getCanSort()
+                          sortingEnabled && header.column.getCanSort()
                             ? header.column.getToggleSortingHandler()
                             : undefined
                         }
@@ -273,7 +235,7 @@ export const DataTable = <TData,>({
                           header.column.columnDef.header,
                           header.getContext()
                         )}
-                        {sorting.enabled &&
+                        {sortingEnabled &&
                           header.column.getCanSort() &&
                           (() => {
                             const sorted = header.column.getIsSorted();
@@ -322,7 +284,7 @@ export const DataTable = <TData,>({
           </TableBody>
         </Table>
       </div>
-      {pagination.enabled &&
+      {paginationEnabled &&
         data.length > 0 &&
         totalPages > 1 &&
         table.getPageCount() > 1 && (
@@ -330,7 +292,7 @@ export const DataTable = <TData,>({
             currentPage={currentPage}
             totalPages={table.getPageCount()}
             onPageChange={(page) => table.setPageIndex(page - 1)}
-            itemsPerPage={pagination.pageSize || 10}
+            itemsPerPage={initialPageSize}
             totalItems={data.length}
           />
         )}

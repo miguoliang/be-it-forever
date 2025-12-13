@@ -1,6 +1,7 @@
 // src/app/api/cards/[id]/review/route.ts
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { NextResponse } from 'next/server'
+import { getTodayDateRange } from '@/lib/utils/dateUtils'
 
 export async function POST(
   request: Request,
@@ -42,9 +43,7 @@ export async function POST(
 
   // Check daily review limit (10 cards per day)
   // Get today's date range in UTC
-  const now = new Date()
-  const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0))
-  const endOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999))
+  const { startOfToday, endOfToday } = getTodayDateRange()
   
   // Check if this card was already reviewed today
   const isCardReviewedToday = card.last_reviewed_at && 

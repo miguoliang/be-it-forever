@@ -1,6 +1,6 @@
 "use client";
 
-import { useOperatorAuth } from "./hooks/useOperatorAuth";
+import { useOperatorAuth } from "../hooks/useOperatorAuth";
 import { useCSVParser } from "./hooks/useCSVParser";
 import { FileInput } from "./components/FileInput";
 import { NextButton } from "./components/NextButton";

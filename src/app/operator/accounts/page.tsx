@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAccounts } from "@/lib/api/accounts";
-import { useOperatorAuth } from "../import/hooks/useOperatorAuth";
+import { useOperatorAuth } from "../hooks/useOperatorAuth";
 import { DataTable, ColumnConfig } from "@/components/Table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";

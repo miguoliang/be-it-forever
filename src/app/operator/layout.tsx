@@ -1,62 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
-import { User } from "@supabase/supabase-js";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { TopNav } from "./components/TopNav";
 import { Sidebar } from "./components/Sidebar";
+import { useOperatorAuth } from "./hooks/useOperatorAuth";
 
 export default function OperatorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
-  const supabase = createClient();
+  const { user, loading, supabase } = useOperatorAuth();
 
-  useEffect(() => {
-    const checkOperator = async () => {
-      const { data, error } = await supabase.auth.getUser();
-
-      if (error || !data?.user) {
-        router.replace("/learn");
-        return;
-      }
-
-      if (data.user.user_metadata?.role !== "operator") {
-        router.replace("/learn");
-        return;
-      }
-
-      setUser(data.user);
-      setLoading(false);
-    };
-
-    checkOperator();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          if (session?.user?.user_metadata?.role === "operator") {
-            setUser(session.user);
-            setLoading(false);
-          } else {
-            router.replace("/learn");
-          }
-        }
-        if (event === "SIGNED_OUT") {
-          router.replace("/");
-        }
-      }
-    );
-
-    return () => listener.subscription.unsubscribe();
-  }, [router, supabase]);
-
+  // Redirect is handled by the hook
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-linear-to-br from-purple-600 to-indigo-700 flex items-center justify-center">
@@ -67,7 +23,7 @@ export default function OperatorLayout({
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push("/");
+    // Redirect handled by hook onAuthStateChange
   };
 
   return (

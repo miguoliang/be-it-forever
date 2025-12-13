@@ -19,16 +19,8 @@ export function useLearnSession() {
 
   // 2. Progress Calculation
   const locallyReviewedCount = cards.filter((card) => card.reviewed).length;
-  
-  // Logic: If apiReviewedCount is 10 and cards is empty, limit reached (10/10)
-  // Otherwise, calculate from API count + local cards
-  const reviewedCount = apiReviewedCount >= 10 && cards.length === 0 
-    ? 10 
-    : apiReviewedCount + locallyReviewedCount;
-  
-  const totalCount = apiReviewedCount >= 10 && cards.length === 0 
-    ? 10 
-    : apiReviewedCount + cards.length;
+  const reviewedCount = apiReviewedCount + locallyReviewedCount;
+  const totalCount = apiReviewedCount + cards.length;
 
   // 3. Navigation Logic (Find next unreviewed card)
   useEffect(() => {

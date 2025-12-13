@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useOperatorAuth } from "../hooks/useOperatorAuth";
+import { useOperatorAuth } from "../../hooks/useOperatorAuth";
 import { useWordImport } from "../hooks/useWordImport";
 import { PreviewTable } from "../components/PreviewTable";
 import { ImportButton } from "../components/ImportButton";

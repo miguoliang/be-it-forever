@@ -1,6 +1,7 @@
 // src/app/api/cards/due/route.ts
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { NextResponse } from 'next/server'
+import { getTodayDateRange } from '@/lib/utils/dateUtils'
 
 export async function GET() {
   try {
@@ -13,9 +14,7 @@ export async function GET() {
     }
 
     // Get today's date range in UTC (start and end of today)
-    const now = new Date()
-    const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0))
-    const endOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999))
+    const { startOfToday, endOfToday } = getTodayDateRange()
 
     // First, count how many cards have been reviewed today (database operation)
     const { count: reviewedTodayCount, error: countError } = await supabase
@@ -33,7 +32,8 @@ export async function GET() {
     // Daily limit: 10 cards per day
     // If user has already reviewed 10 cards today, they cannot review more
     // Return consistent format: { reviewedCount: 10, cards: [] }
-    if (reviewedTodayCount && reviewedTodayCount >= 10) {
+    const currentReviewedCount = reviewedTodayCount ?? 0
+    if (currentReviewedCount >= 10) {
       return NextResponse.json({
         reviewedCount: 10,
         cards: []
@@ -42,7 +42,7 @@ export async function GET() {
 
     // User hasn't reached daily limit yet
     // Fetch due cards only (we already have the reviewed count)
-    const remainingSlots = 10 - (reviewedTodayCount || 0)
+    const remainingSlots = 10 - currentReviewedCount
 
     // Fetch due cards (cards that need to be reviewed and haven't been reviewed today)
     const { data: dueCards, error: dueError } = await supabase
@@ -62,7 +62,7 @@ export async function GET() {
         last_reviewed_at
       `)
       .eq('account_id', user.id)
-      .lte('next_review_date', now.toISOString())
+      .lte('next_review_date', new Date().toISOString())
       .order('next_review_date', { ascending: true })
       .limit(remainingSlots)
 
@@ -73,8 +73,8 @@ export async function GET() {
 
     // Return reviewed count and due cards array
     return NextResponse.json({
-      reviewedCount: reviewedTodayCount || 0,
-      cards: dueCards || []
+      reviewedCount: currentReviewedCount,
+      cards: dueCards ?? []
     })
   } catch (error) {
     console.error('Get due cards error:', error)
