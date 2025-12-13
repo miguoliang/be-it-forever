@@ -84,27 +84,16 @@ End-users focused on mastering content.
 
 ### 3.2 Content Managers (Operators)
 
-Internal users who manage the learning content. They cannot directly modify the live knowledge base.
+Internal users who manage the learning content.
 
 **Key Workflows**:
 
-1. **Request Submission**:
-   * Create/Edit/Delete knowledge items via the Operator Dashboard.
-   * These actions create a **Change Request** instead of modifying data directly.
-2. **Request Tracking**:
-   * View status of submitted requests (Pending, Approved, Rejected).
-
-### 3.3 Operator Managers
-
-Senior internal users with authority to approve changes.
-
-**Key Workflows**:
-
-1. **Review Workflow**:
-   * View list of pending Change Requests.
-   * Review diffs (Old vs New).
-   * Approve -> Changes applied to live DB.
-   * Reject -> Request closed with reason.
+1.  **Content Management**:
+    *   Create/Edit/Delete knowledge items via the Operator Dashboard.
+    *   Changes are applied directly to the live database (`knowledge` table).
+2.  **Bulk Import**:
+    *   Upload CSV files to batch create knowledge items.
+    *   System handles deduplication (`ON CONFLICT DO NOTHING`).
 
 ---
 

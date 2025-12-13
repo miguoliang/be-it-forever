@@ -8,12 +8,12 @@ export interface ImportResult {
 }
 
 export async function importWords(previewData: CSVData): Promise<ImportResult> {
-  const res = await fetch("/api/import-words", {
+  const res = await fetch("/api/knowledge", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ words: previewData.rows }),
+    body: JSON.stringify({ items: previewData.rows }),
   });
 
   const result = await res.json();
