@@ -13,7 +13,6 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "code", label: "代码", visible: true },
   { key: "name", label: "名称", visible: true },
   { key: "description", label: "描述", visible: true },
-  { key: "metadata", label: "音标", visible: true },
   { key: "created_at", label: "创建时间", visible: true },
   { key: "updated_at", label: "更新时间", visible: true },
 ];
@@ -58,53 +57,6 @@ export function KnowledgeTable() {
             {row.getValue("description")}
           </span>
         ),
-      },
-      {
-        accessorKey: "metadata",
-        header: "音标",
-        cell: ({ row }) => {
-          const metadata = row.getValue("metadata") as Knowledge["metadata"];
-          const phonetic = metadata?.phonetic;
-          const name = row.original.name;
-
-          if (!phonetic) return "-";
-
-          return (
-            <div className="flex items-center gap-2">
-              <span>{phonetic}</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if ("speechSynthesis" in window && name) {
-                    window.speechSynthesis.cancel();
-                    const utter = new SpeechSynthesisUtterance(name);
-                    utter.lang = "en-US";
-                    utter.rate = 0.8;
-                    window.speechSynthesis.speak(utter);
-                  }
-                }}
-                className="p-1.5 text-primary hover:text-primary/80 hover:bg-accent rounded transition-colors"
-                aria-label="播放单词"
-                title="播放单词"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 .53-.22H15a.75.75 0 0 1 .75.75v15a.75.75 0 0 1-.75.75h-3.25a.75.75 0 0 1-.53-.22l-4.72-4.72H4.5a.75.75 0 0 1-.75-.75V9a.75.75 0 0 1 .75-.75h2.25Z"
-                  />
-                </svg>
-              </button>
-            </div>
-          );
-        },
       },
       {
         accessorKey: "created_at",

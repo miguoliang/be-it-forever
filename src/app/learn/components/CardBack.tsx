@@ -17,12 +17,6 @@ export const CardBack = ({ knowledge }: CardBackProps) => {
         </p>
       </div>
 
-      {knowledge.metadata.phonetic && (
-        <p className="text-4xl text-primary font-medium mb-8">
-          {knowledge.metadata.phonetic}
-        </p>
-      )}
-
       <p className="text-xl text-muted-foreground">
         请为这张卡片评分
       </p>

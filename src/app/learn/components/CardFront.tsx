@@ -14,12 +14,6 @@ export const CardFront = ({ knowledge, onSpeak }: CardFrontProps) => {
         {knowledge.name}
       </h2>
 
-      {knowledge.metadata.phonetic && (
-        <p className="text-4xl text-primary font-medium mb-8">
-          {knowledge.metadata.phonetic}
-        </p>
-      )}
-
       <div className="flex items-center justify-center gap-4 mb-8">
         <Button
           onClick={(e) => {
