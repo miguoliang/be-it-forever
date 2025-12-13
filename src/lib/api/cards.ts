@@ -1,7 +1,12 @@
 // API functions for cards
 import type { Card } from "@/app/learn/types";
 
-export async function fetchDueCards(): Promise<Card[]> {
+export interface DueCardsResponse {
+  reviewedCount: number;
+  cards: Card[];
+}
+
+export async function fetchDueCards(): Promise<DueCardsResponse> {
   const res = await fetch("/api/cards/due");
   if (!res.ok) {
     if (res.status === 401) {

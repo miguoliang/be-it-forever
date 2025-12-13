@@ -40,6 +40,41 @@ export async function POST(
 
   if (fetchError || !card) return NextResponse.json({ error: '卡片不存在' }, { status: 404 })
 
+  // Check daily review limit (10 cards per day)
+  // Get today's date range in UTC
+  const now = new Date()
+  const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0))
+  const endOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999))
+  
+  // Check if this card was already reviewed today
+  const isCardReviewedToday = card.last_reviewed_at && 
+    new Date(card.last_reviewed_at) >= startOfToday &&
+    new Date(card.last_reviewed_at) <= endOfToday
+  
+  // If this is a new card to review (not reviewed today), check daily limit
+  if (!isCardReviewedToday) {
+    // Count cards reviewed today
+    const { count: reviewedTodayCount, error: countError } = await supabase
+      .from('account_cards')
+      .select('*', { count: 'exact', head: true })
+      .eq('account_id', user.id)
+      .gte('last_reviewed_at', startOfToday.toISOString())
+      .lte('last_reviewed_at', endOfToday.toISOString())
+    
+    if (countError) {
+      console.error('Count reviewed today error:', countError)
+      return NextResponse.json({ error: '检查每日限制失败' }, { status: 500 })
+    }
+    
+    // If already reviewed 10 cards today, cannot review more
+    if (reviewedTodayCount && reviewedTodayCount >= 10) {
+      return NextResponse.json(
+        { error: '今日已复习10张卡片，已达到每日限制' },
+        { status: 403 }
+      )
+    }
+  }
+
   // 2. 完整 SM-2 算法（Anki 官方实现）
   let newEase = card.ease_factor
   let newReps = card.repetitions
