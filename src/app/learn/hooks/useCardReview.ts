@@ -22,30 +22,35 @@ export function useCardReview({
   const { mutate: reviewCard, isPending } = useMutation({
     mutationFn: ({ cardId, quality }: { cardId: number; quality: number }) =>
       reviewCardAPI(cardId, quality),
-    // Optimistic update: immediately update UI
+    // Optimistic update: mark card as reviewed today
     onMutate: async ({ cardId }) => {
       // Snapshot the previous value for rollback
       const previousCards = cards;
       // Capture currentIndex from closure to use in the update
       const currentIdx = currentIndex;
 
-      // Calculate the updated cards array
-      const updatedCards = cards.filter((card) => card.id !== cardId);
+      // Mark the card as reviewed and set last_reviewed_at to now (today)
+      const now = new Date().toISOString();
+      const updatedCards = cards.map((card) =>
+        card.id === cardId
+          ? { ...card, reviewed: true, last_reviewed_at: now }
+          : card
+      );
 
-      // Update index before updating cards to avoid race conditions
-      if (updatedCards.length > 0) {
-        // After removing the card at currentIdx, adjust the index:
-        // - Stay at the same index (which now points to the next card)
-        // - If index is out of bounds, adjust to last valid index
-        if (currentIdx >= updatedCards.length) {
-          setCurrentIndex(() => updatedCards.length - 1);
-        }
-        // Otherwise, currentIndex stays the same (no need to change it)
-        // The card at currentIdx was removed, so currentIdx now points to the next card
+      // Find the next unreviewed card
+      const nextUnreviewedIndex = updatedCards.findIndex(
+        (card, index) => index > currentIdx && !card.reviewed
+      );
+
+      // Update index to next unreviewed card, or stay at current if no more unreviewed cards
+      if (nextUnreviewedIndex !== -1) {
+        setCurrentIndex(() => nextUnreviewedIndex);
         resetFlip();
       } else {
-        // No more cards, reset index
-        setCurrentIndex(() => 0);
+        // No more unreviewed cards, stay at current or move to last card
+        if (currentIdx < updatedCards.length - 1) {
+          setCurrentIndex(() => updatedCards.length - 1);
+        }
         resetFlip();
       }
 
@@ -55,10 +60,11 @@ export function useCardReview({
       return { previousCards };
     },
     // After successful review, no refetch needed
-    // The card was already removed optimistically, and its next_review_date
-    // is set to the future, so it won't appear in future due queries
+    // The card is marked as reviewed (today), and its next_review_date
+    // is set to the future, so it won't appear in future due queries.
+    // The API also updates last_reviewed_at in the database.
     onSuccess: () => {
-      // Card already removed from UI in onMutate
+      // Card already marked as reviewed (today) in onMutate
       // No additional action needed
     },
     // If mutation fails, rollback to previous state

@@ -26,19 +26,42 @@ export default function Learn() {
   const router = useRouter();
   const supabase = createClient();
 
-  // Ensure currentIndex is within bounds
-  const safeIndex = cards.length > 0 ? Math.min(currentIndex, cards.length - 1) : 0;
+  // Calculate daily progress: cards reviewed today out of total cards for today
+  const reviewedCount = cards.filter((card) => card.reviewed).length;
+  const totalCount = cards.length;
 
-  // Reset index when cards list changes (using useEffect with proper pattern)
+  // Ensure currentIndex is within bounds and points to an unreviewed card
   useEffect(() => {
-    if (cards.length > 0 && currentIndex >= cards.length) {
-      // Use setTimeout to avoid synchronous setState in effect
-      const timeoutId = setTimeout(() => {
-        setCurrentIndex(Math.max(0, cards.length - 1));
-      }, 0);
-      return () => clearTimeout(timeoutId);
+    if (cards.length > 0) {
+      const validIndex = Math.min(currentIndex, cards.length - 1);
+      const currentCard = cards[validIndex];
+      
+      // If current card is reviewed, find the next unreviewed card
+      if (currentCard?.reviewed) {
+        // Look for next unreviewed card from current index
+        let nextUnreviewed = cards.findIndex(
+          (card, index) => index > validIndex && !card.reviewed
+        );
+        // If not found after current, look from the beginning
+        if (nextUnreviewed === -1) {
+          nextUnreviewed = cards.findIndex((card) => !card.reviewed);
+        }
+        
+        if (nextUnreviewed !== -1 && nextUnreviewed !== validIndex) {
+          const timeoutId = setTimeout(() => {
+            setCurrentIndex(nextUnreviewed);
+          }, 0);
+          return () => clearTimeout(timeoutId);
+        }
+      } else if (currentIndex >= cards.length) {
+        // Index is out of bounds, adjust to last valid index
+        const timeoutId = setTimeout(() => {
+          setCurrentIndex(Math.max(0, cards.length - 1));
+        }, 0);
+        return () => clearTimeout(timeoutId);
+      }
     }
-  }, [cards.length, currentIndex]);
+  }, [cards, currentIndex, setCurrentIndex]);
 
   const { handleRate } = useCardReview({
     cards,
@@ -56,7 +79,9 @@ export default function Learn() {
   if (loading) return <LoadingState />;
   if (cards.length === 0) return <EmptyState />;
 
-  const current = cards[currentIndex];
+  // Get current card, ensuring we have a valid index
+  const safeIndex = cards.length > 0 ? Math.min(currentIndex, cards.length - 1) : 0;
+  const current = cards[safeIndex];
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4">
@@ -71,7 +96,7 @@ export default function Learn() {
           <span className="hidden sm:inline">退出登录</span>
         </Button>
       </div>
-      <ProgressIndicator current={safeIndex + 1} total={cards.length} />
+      <ProgressIndicator reviewed={reviewedCount} total={totalCount} />
 
       <StudyCard
         card={current}
