@@ -16,7 +16,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
   // Check if user is operator
-  if (user.user_metadata?.role !== 'operator') {
+  if (user.app_metadata?.role !== 'operator') {
     return NextResponse.json({ error: '权限不足' }, { status: 403 })
   }
 
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user || user.user_metadata?.role !== "operator") {
+    if (authError || !user || user.app_metadata?.role !== "operator") {
       return NextResponse.json(
         { error: "Permission denied" },
         { status: 403 }

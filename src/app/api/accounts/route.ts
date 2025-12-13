@@ -5,7 +5,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createRouteHandlerClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role !== "operator") {
+  if (!user || user.app_metadata?.role !== "operator") {
     return NextResponse.json({ error: "权限不足" }, { status: 403 });
   }
 

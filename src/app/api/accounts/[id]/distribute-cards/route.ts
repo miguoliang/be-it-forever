@@ -11,7 +11,7 @@ export async function POST(
 
   // Check operator permission
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role !== "operator") {
+  if (!user || user.app_metadata?.role !== "operator") {
     return NextResponse.json({ error: "权限不足" }, { status: 403 });
   }
 
@@ -112,7 +112,7 @@ export async function POST(
     // Use batch insert with ON CONFLICT DO NOTHING in a transaction
     // Supabase's upsert with ignoreDuplicates uses ON CONFLICT DO NOTHING at DB level
     // The entire batch insert is atomic (single transaction)
-    const { data: insertedData, error: insertError } = await supabase
+    const { data: insertedData, error: insertError } = await adminClient
       .from("account_cards")
       .upsert(accountCards, {
         onConflict: "account_id,knowledge_code,card_type_code",
