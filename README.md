@@ -1,5 +1,11 @@
 # Be It Forever (背它一辈子)
 
+[![CI](https://github.com/miguoliang/be-it-forever/actions/workflows/ci.yml/badge.svg)](https://github.com/miguoliang/be-it-forever/actions/workflows/ci.yml)
+![Netlify](https://img.shields.io/badge/Netlify-Deployed-00C7B7?style=flat&logo=netlify&logoColor=white)
+[![License](https://img.shields.io/github/license/miguoliang/be-it-forever)](LICENSE)
+
+<br/>
+
 ![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
