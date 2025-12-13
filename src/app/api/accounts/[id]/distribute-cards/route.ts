@@ -96,7 +96,6 @@ export async function POST(
     }
 
     // Prepare account cards data for all knowledge items
-    const accountCardsToInsert: any[] = [];
     const now = nowISO();
     const accountCards = knowledges.map((knowledge: { code: string }) => ({
       account_id: accountId,
