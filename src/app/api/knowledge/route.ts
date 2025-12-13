@@ -9,10 +9,6 @@ interface KnowledgeItem {
   metadata?: Record<string, unknown>;
 }
 
-interface ImportRequest {
-  items: KnowledgeItem[];
-}
-
 export async function GET() {
   const supabase = await createRouteHandlerClient()
 
