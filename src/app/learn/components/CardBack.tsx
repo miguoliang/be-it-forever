@@ -17,7 +17,7 @@ export const CardBack = ({ knowledge }: CardBackProps) => {
         </p>
       </div>
 
-      {knowledge.metadata?.phonetic && (
+      {knowledge.metadata.phonetic && (
         <p className="text-4xl text-primary font-medium mb-8">
           {knowledge.metadata.phonetic}
         </p>

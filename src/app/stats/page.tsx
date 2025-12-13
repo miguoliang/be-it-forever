@@ -1,70 +1,21 @@
 // src/app/stats/page.tsx
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
+import { useStats } from './hooks/useStats'
 
 export default function Stats() {
-  const [stats, setStats] = useState({
-    total: 0,
-    mastered: 0,
-    learning: 0,
-    dueToday: 0,
-    streak: 0,
-    heatMap: [] as { date: string; count: number }[]
-  })
-  const supabase = useMemo(() => createClient(), [])
+  const stats = useStats()
   const router = useRouter()
 
   const handleSignOut = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
   }
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // 基础统计
-      const { data: cards } = await supabase
-        .from('account_cards')
-        .select('repetitions, interval_days')
-        .eq('account_id', user.id)
-
-      const total = cards?.length || 0
-      const mastered = cards?.filter(c => c.repetitions >= 7 && c.interval_days >= 30).length || 0
-      const learning = cards?.filter(c => c.repetitions > 0 && c.interval_days < 30).length || 0
-
-      // 今日待复习
-      const { count: dueToday } = await supabase
-        .from('account_cards')
-        .select('*', { count: 'exact', head: true })
-        .eq('account_id', user.id)
-        .lte('next_review_date', new Date().toISOString())
-
-      // 最近30天热力图
-      const { data: history } = await supabase
-        .from('review_history')
-        .select('reviewed_at')
-        .eq('account_card_id', user.id)
-        .gte('reviewed_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-
-      const heatMap = Array(30).fill(0).map((_, i) => {
-        const date = new Date()
-        date.setDate(date.getDate() - (29 - i))
-        const dateStr = date.toISOString().split('T')[0]
-        const count = history?.filter(h => h.reviewed_at.startsWith(dateStr)).length || 0
-        return { date: dateStr, count }
-      })
-
-      setStats({ total, mastered, learning, dueToday: dueToday || 0, streak: 18, heatMap })
-    }
-    fetchStats()
-  }, [supabase])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
