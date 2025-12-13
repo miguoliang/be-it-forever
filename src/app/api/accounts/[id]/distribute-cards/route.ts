@@ -1,5 +1,5 @@
 import { createRouteHandlerClient } from '@/lib/supabaseServer';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { nowISO } from '@/lib/utils/dateUtils';
 
 export async function POST(
