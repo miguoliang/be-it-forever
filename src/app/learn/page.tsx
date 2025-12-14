@@ -6,7 +6,6 @@ import { EmptyState } from "./components/EmptyState";
 import { ProgressIndicator } from "./components/ProgressIndicator";
 import { StudyCard } from "./components/StudyCard";
 import { RatingButtons } from "./components/RatingButtons";
-import { CardStyles } from "./components/CardStyles";
 import { LogOut } from "lucide-react";
 import { useLearnSession } from "./hooks/useLearnSession";
 
@@ -51,8 +50,6 @@ export default function Learn() {
       />
 
       {flip.isFlipped && <RatingButtons onRate={review.handleRate} />}
-
-      <CardStyles />
     </div>
   );
 }
