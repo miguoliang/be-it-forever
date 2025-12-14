@@ -50,10 +50,21 @@ export async function GET() {
       .select(`
         id,
         knowledge_code,
+        card_type_code,
         knowledge!inner (
           code,
           name,
-          description
+          description,
+          metadata
+        ),
+        card_types!inner (
+          code,
+          card_type_templates (
+            role,
+            templates (
+              content
+            )
+          )
         ),
         ease_factor,
         interval_days,
@@ -71,10 +82,36 @@ export async function GET() {
       return NextResponse.json({ error: dueError.message }, { status: 500 })
     }
 
+    // Transform response to include simplified template structure
+    const formattedCards = dueCards?.map(card => {
+      // Define types for the raw DB response structure for clarity
+      interface TemplateRelation {
+        role: string;
+        templates: { content: string } | null;
+      }
+      
+      // Explicitly type the joined property
+      const cardTypeTemplates = (card.card_types as unknown as { card_type_templates: TemplateRelation[] })?.card_type_templates;
+
+      const templates = cardTypeTemplates?.reduce((acc: { front?: string; back?: string }, t: TemplateRelation) => {
+        if (t.role === 'front') acc.front = t.templates?.content;
+        if (t.role === 'back') acc.back = t.templates?.content;
+        return acc;
+      }, { front: '', back: '' });
+
+      // Remove the complex nested structure before returning
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { card_types, ...rest } = card;
+      return {
+        ...rest,
+        templates
+      };
+    });
+
     // Return reviewed count and due cards array
     return NextResponse.json({
       reviewedCount: currentReviewedCount,
-      cards: dueCards ?? []
+      cards: formattedCards ?? []
     })
   } catch (error) {
     console.error('Get due cards error:', error)
