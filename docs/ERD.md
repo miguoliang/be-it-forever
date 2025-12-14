@@ -45,7 +45,7 @@ Rendering layouts (HTML/Markdown/Component structures) linked to card types.
 | `name` | `VARCHAR(255)` | NO | Unique template name. |
 | `description` | `TEXT` | NO | Description of the template. |
 | `format` | `VARCHAR(255)` | NO | Format type (e.g., "markdown", "html"). |
-| `content` | `BYTEA` | NO | The actual template content. |
+| `content` | `TEXT` | NO | The actual template content. |
 | `created_at` | `TIMESTAMPTZ` | NO | Creation timestamp. |
 | `updated_at` | `TIMESTAMPTZ` | NO | Last update timestamp. |
 
