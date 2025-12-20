@@ -1,38 +1,32 @@
 // src/app/api/knowledge/route.ts
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
 import { NextRequest, NextResponse } from 'next/server'
-
-// Define types for the request body
-interface KnowledgeItem {
-  name: string;
-  description?: string;
-  metadata?: Record<string, unknown>;
-}
+import { knowledgeService, ImportKnowledgeParams } from '@/lib/services/knowledgeService'
 
 export async function GET() {
-  const supabase = await createRouteHandlerClient()
+  try {
+    const supabase = await createRouteHandlerClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
-  // Check if user is operator
-  if (user.app_metadata?.role !== 'operator') {
-    return NextResponse.json({ error: '权限不足' }, { status: 403 })
+    // Check if user is operator
+    if (user.app_metadata?.role !== 'operator') {
+      return NextResponse.json({ error: '权限不足' }, { status: 403 })
+    }
+
+    const data = await knowledgeService.getAllKnowledge(supabase)
+
+    return NextResponse.json(data)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
-
-  const { data, error } = await supabase
-    .from('knowledge')
-    .select('code, name, description, metadata, created_at, updated_at')
-    .order('created_at', { ascending: false })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  return NextResponse.json(data)
 }
 
 export async function POST(req: NextRequest) {
   try {
-    let items: KnowledgeItem[] = [];
+    let items: ImportKnowledgeParams[] = [];
     
     try {
       const body = await req.json();
@@ -76,50 +70,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate and transform
-    const validItems = items
-      .map((item) => {
-        if (!item || typeof item !== 'object' || !item.name) return null;
-        
-        return {
-          name: item.name.trim(),
-          description: item.description?.trim() || "",
-          metadata: item.metadata || {},
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null && item.name.length > 0);
-
-    if (validItems.length === 0) {
-      return NextResponse.json(
-        { error: "No valid items found" },
-        { status: 400 }
-      );
+    const result = await knowledgeService.importKnowledge(supabase, items);
+    
+    if (!result.success && result.message === "No valid items found") {
+        return NextResponse.json({ error: result.message }, { status: 400 })
     }
 
-    // Upsert
-    const { data: inserted, error } = await supabase
-      .from("knowledge")
-      .upsert(validItems, {
-        onConflict: "name",
-        ignoreDuplicates: true,
-      })
-      .select("code");
-
-    if (error) {
-      console.error("Import error:", error);
-      throw error;
-    }
-
-    const insertedCount = inserted?.length || 0;
-    const skippedCount = validItems.length - insertedCount;
-
-    return NextResponse.json({
-      success: true,
-      count: insertedCount,
-      total: validItems.length,
-      skipped: skippedCount,
-      message: `Successfully imported ${insertedCount} items. ${skippedCount} duplicates skipped.`,
-    });
+    return NextResponse.json(result);
 
   } catch (e) {
     console.error("Import exception:", e);
