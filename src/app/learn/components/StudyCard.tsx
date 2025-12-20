@@ -1,6 +1,7 @@
 import type { Card } from "../types";
 import { DynamicCard } from "./DynamicCard";
 import { Card as ShadcnCard, CardContent } from "@/components/ui/card";
+import { DEFAULT_CARD_TEMPLATES } from "@/lib/constants/templates";
 
 interface StudyCardProps {
   card: Card;
@@ -45,7 +46,7 @@ export const StudyCard = ({
         >
           <CardContent className="h-full p-12">
             <DynamicCard 
-              template={card.templates?.front || ''} 
+              template={card.templates?.front || DEFAULT_CARD_TEMPLATES.front} 
               knowledge={card.knowledge} 
               className="h-full"
             />
@@ -64,7 +65,7 @@ export const StudyCard = ({
         >
           <CardContent className="h-full p-12">
             <DynamicCard 
-              template={card.templates?.back || ''} 
+              template={card.templates?.back || DEFAULT_CARD_TEMPLATES.back} 
               knowledge={card.knowledge}
               className="h-full"
             />
