@@ -2,7 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { getTodayDateRange, nowISO } from '@/lib/utils/dateUtils';
 import { Card, KnowledgeMetadata } from '@/app/learn/types';
 import { DAILY_REVIEW_LIMIT } from '@/lib/constants';
-import { ApiError } from '@/lib/utils/apiError';
+import { ApiError } from '@/lib/utils/apiErrorClasses';
 
 export interface DueCardsResult {
   reviewedCount: number;

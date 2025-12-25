@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { nowISO } from '@/lib/utils/dateUtils';
-import { ApiError } from '@/lib/utils/apiError';
+import { ApiError } from '@/lib/utils/apiErrorClasses';
 
 export interface Account {
   id: string;
