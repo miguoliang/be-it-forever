@@ -1,21 +1,19 @@
-// src/app/api/cards/[id]/review/route.ts
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { cardService } from '@/lib/services/cardService'
+import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
+import { MAX_QUALITY, MIN_QUALITY } from '@/lib/constants'
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { quality } = await request.json() // 0-5
     
     // Validate quality parameter
-    if (typeof quality !== 'number' || quality < 0 || quality > 5) {
-      return NextResponse.json(
-        { error: '评分必须在 0-5 之间' },
-        { status: 400 }
-      )
+    if (typeof quality !== 'number' || quality < MIN_QUALITY || quality > MAX_QUALITY) {
+      throw ApiError.validationError(`评分必须在 ${MIN_QUALITY}-${MAX_QUALITY} 之间`)
     }
 
     const supabase = await createRouteHandlerClient()
@@ -23,30 +21,18 @@ export async function POST(
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: '未登录' }, { status: 401 })
+      throw ApiError.unauthorized('未登录')
     }
 
     const cardId = parseInt(id, 10)
     if (isNaN(cardId)) {
-      return NextResponse.json({ error: '无效的卡片ID' }, { status: 400 })
+      throw ApiError.validationError('无效的卡片ID')
     }
 
     const result = await cardService.reviewCard(supabase, user.id, cardId, quality)
 
-    return NextResponse.json(result)
+    return apiSuccess(result)
   } catch (error) {
-    console.error('Review card error:', error)
-    const errorMessage =
-      error instanceof Error ? error.message : '复习失败'
-      
-    // Return specific status codes based on error message
-    if (errorMessage.includes('今日已复习10张卡片')) {
-      return NextResponse.json({ error: errorMessage }, { status: 403 })
-    }
-    if (errorMessage === '卡片不存在') {
-      return NextResponse.json({ error: errorMessage }, { status: 404 })
-    }
-    
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    return handleApiError(error)
   }
 }

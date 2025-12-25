@@ -4,19 +4,20 @@ import {
   isRateLimitError,
   getRateLimitErrorMessage,
 } from "@/lib/utils/errorHandling";
+import { ApiError, handleApiError, apiSuccess } from "@/lib/utils/apiError";
 
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
 
     if (!email || typeof email !== "string") {
-      return NextResponse.json({ error: "邮箱不能为空" }, { status: 400 });
+      throw ApiError.validationError("邮箱不能为空");
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: "邮箱格式不正确" }, { status: 400 });
+      throw ApiError.validationError("邮箱格式不正确");
     }
 
     const supabase = await createRouteHandlerClient();
@@ -31,25 +32,25 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       if (isRateLimitError(error.message)) {
+        // Handle rate limit specifically as it needs custom message parsing
         return NextResponse.json(
           {
-            error: getRateLimitErrorMessage(error.message, "重新发送验证码"),
+            error: {
+                code: 'RATE_LIMIT_EXCEEDED',
+                message: getRateLimitErrorMessage(error.message, "重新发送验证码")
+            }
           },
-          { status: 429 } // 429 Too Many Requests
+          { status: 429 } 
         );
       }
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      throw ApiError.validationError(error.message);
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       message: "验证码已发送到您的邮箱",
     });
   } catch (error) {
-    console.error("Send OTP error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "发送验证码失败";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return handleApiError(error);
   }
 }
-

@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { nowISO } from '@/lib/utils/dateUtils';
+import { ApiError } from '@/lib/utils/apiError';
 
 export interface Account {
   id: string;
@@ -41,11 +42,11 @@ export const accountService = {
     });
 
     if (error) {
-      throw error;
+      throw ApiError.internal(`List users failed: ${error.message}`);
     }
 
     if (!usersResponse || !usersResponse.users) {
-      throw new Error("无法获取用户列表");
+      throw ApiError.internal("无法获取用户列表");
     }
 
     const accounts = usersResponse.users.map((u) => ({
@@ -81,16 +82,16 @@ export const accountService = {
     const { data: targetUser, error: userError } = await adminClient.auth.admin.getUserById(targetUserId);
     
     if (userError) {
-      throw new Error(`获取目标账户信息失败: ${userError.message}`);
+      throw ApiError.internal(`获取目标账户信息失败: ${userError.message}`);
     }
 
     if (!targetUser || !targetUser.user) {
-      throw new Error("目标账户不存在");
+      throw ApiError.notFound("目标账户不存在");
     }
 
     const targetRole = (targetUser.user.user_metadata?.role as string)?.trim() || "learner";
     if (targetRole === "operator") {
-      throw new Error("不能给 operator 分配卡片");
+      throw ApiError.validationError("不能给 operator 分配卡片");
     }
 
     // 2. Get all knowledge items
@@ -100,11 +101,11 @@ export const accountService = {
       .select("code");
 
     if (knowledgesError) {
-      throw new Error(`获取知识列表失败: ${knowledgesError.message}`);
+      throw ApiError.internal(`获取知识列表失败: ${knowledgesError.message}`);
     }
 
     if (!knowledges || knowledges.length === 0) {
-      throw new Error("知识库中没有可分配的卡片");
+      throw ApiError.validationError("知识库中没有可分配的卡片");
     }
 
     // 3. Get default card type
@@ -142,7 +143,7 @@ export const accountService = {
       .select();
 
     if (insertError) {
-      throw new Error(`分配卡片失败: ${insertError.message}`);
+      throw ApiError.internal(`分配卡片失败: ${insertError.message}`);
     }
 
     const insertedCount = insertedData?.length || 0;

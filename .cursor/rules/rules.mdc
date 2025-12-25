@@ -1,0 +1,268 @@
+---
+alwaysApply: true
+---
+
+# Software Development Principles
+
+Follow these principles when writing, reviewing, or refactoring code.
+
+## Core Principles
+
+### SOLID Principles
+
+**Single Responsibility Principle (SRP)**
+- Each class, function, or module should have one reason to change
+- A component should do one thing and do it well
+- Separate concerns: business logic, data access, presentation, etc.
+
+**Open/Closed Principle (OCP)**
+- Software entities should be open for extension but closed for modification
+- Use composition, inheritance, or interfaces to extend functionality
+- Avoid modifying existing code when adding new features
+
+**Liskov Substitution Principle (LSP)**
+- Subtypes must be substitutable for their base types
+- Derived classes should not break the expected behavior of base classes
+- Maintain behavioral compatibility in inheritance hierarchies
+
+**Interface Segregation Principle (ISP)**
+- Clients should not be forced to depend on interfaces they don't use
+- Create specific, focused interfaces rather than large, general ones
+- Prefer composition over inheritance when appropriate
+
+**Dependency Inversion Principle (DIP)**
+- High-level modules should not depend on low-level modules; both should depend on abstractions
+- Depend on abstractions (interfaces) rather than concrete implementations
+- Use dependency injection to manage dependencies
+
+### DRY (Don't Repeat Yourself)
+- Avoid code duplication
+- Extract common functionality into reusable functions, components, or utilities
+- Use configuration files for repeated values
+- Create shared libraries for common patterns
+
+### KISS (Keep It Simple, Stupid)
+- Prefer simple solutions over complex ones
+- Avoid premature optimization
+- Write code that is easy to understand and maintain
+- If you can't explain it simply, you don't understand it well enough
+
+### YAGNI (You Aren't Gonna Need It)
+- Don't implement functionality until it's actually needed
+- Avoid speculative generality
+- Focus on current requirements, not future possibilities
+- Refactor when the need arises, not preemptively
+
+### Separation of Concerns
+- Divide application into distinct sections, each addressing a separate concern
+- UI components should not contain business logic
+- Data access should be separated from business logic
+- Each layer should have a clear, single responsibility
+
+### Principle of Least Surprise
+- Code should behave in ways that are intuitive and expected
+- Follow established conventions and patterns
+- Use clear, descriptive names
+- Maintain consistency across the codebase
+
+### Fail Fast
+- Detect errors as early as possible
+- Validate inputs at boundaries
+- Use type checking and assertions
+- Provide clear error messages
+
+### Composition Over Inheritance
+- Prefer composition to achieve code reuse
+- Use interfaces and mixins when appropriate
+- Avoid deep inheritance hierarchies
+- Favor "has-a" relationships over "is-a" relationships
+
+## Code Quality Principles
+
+### Clean Code
+- Write self-documenting code with meaningful names
+- Functions should be small and do one thing
+- Avoid deep nesting (prefer early returns)
+- Remove dead code and comments that don't add value
+- Follow consistent formatting and style
+
+### Testability
+- Write testable code from the start
+- Keep functions pure when possible
+- Avoid hidden dependencies
+- Use dependency injection
+- Write unit tests for business logic
+
+### Maintainability
+- Code should be easy to modify and extend
+- Write for future maintainers (including yourself)
+- Document complex logic and decisions
+- Keep functions and classes small
+- Use meaningful variable and function names
+
+### Performance Awareness
+- Measure before optimizing
+- Understand time and space complexity
+- Optimize bottlenecks, not everything
+- Consider scalability from the start
+- Use appropriate data structures and algorithms
+
+## Design Principles
+
+### Modularity
+- Break systems into independent, interchangeable modules
+- Modules should have well-defined interfaces
+- Minimize coupling between modules
+- Maximize cohesion within modules
+
+### Encapsulation
+- Hide internal implementation details
+- Expose only necessary interfaces
+- Use access modifiers appropriately
+- Protect data integrity through proper encapsulation
+
+### Abstraction
+- Hide complexity behind simple interfaces
+- Create layers of abstraction
+- Focus on what, not how
+- Use interfaces and abstract classes appropriately
+
+### Consistency
+- Follow established patterns and conventions
+- Maintain consistent naming conventions
+- Use consistent code structure
+- Apply consistent error handling
+
+## Security Principles
+
+### Security by Design
+- Consider security from the beginning
+- Validate and sanitize all inputs
+- Use parameterized queries to prevent SQL injection
+- Implement proper authentication and authorization
+- Follow the principle of least privilege
+
+### Defense in Depth
+- Implement multiple layers of security
+- Don't rely on a single security measure
+- Validate at multiple levels
+- Log security events
+
+## Process Principles
+
+### Version Control Best Practices
+- Commit frequently with meaningful messages
+- Use feature branches for new work
+- Keep commits focused and atomic
+- Review code before merging
+- Maintain a clean git history
+
+### Code Reviews
+- Review for correctness, clarity, and maintainability
+- Provide constructive feedback
+- Learn from reviews
+- Review your own code before requesting review
+
+### Documentation
+- Document why, not what (code should be self-explanatory)
+- Keep documentation up to date
+- Document APIs and public interfaces
+- Include examples in documentation
+- Write clear commit messages
+
+### Refactoring
+- Refactor continuously, not in big batches
+- Improve code structure without changing behavior
+- Remove technical debt incrementally
+- Refactor before adding new features to existing code
+
+### Continuous Integration
+- Integrate code frequently
+- Automate builds and tests
+- Fix broken builds immediately
+- Keep the main branch deployable
+
+## Error Handling Principles
+
+### Explicit Error Handling
+- Handle errors explicitly, don't ignore them
+- Use appropriate error types
+- Provide meaningful error messages
+- Log errors appropriately
+- Fail gracefully with user-friendly messages
+
+### Fail Safe
+- Design systems to fail in a safe state
+- Implement proper error recovery
+- Use transactions for data integrity
+- Validate before processing
+
+## API Design Principles
+
+### RESTful Design
+- Use appropriate HTTP methods
+- Follow REST conventions
+- Use meaningful resource names
+- Return appropriate status codes
+- Version APIs appropriately
+
+### API Consistency
+- Maintain consistent naming conventions
+- Use consistent response formats
+- Follow consistent error handling patterns
+- Document APIs thoroughly
+
+## User Experience Principles
+
+### User-Centric Design
+- Design for the user, not for the developer
+- Provide clear feedback
+- Handle edge cases gracefully
+- Optimize for common use cases
+- Make the system intuitive
+
+### Progressive Enhancement
+- Build core functionality first
+- Add enhancements progressively
+- Ensure basic functionality works everywhere
+- Enhance for capable environments
+
+## Best Practices Summary
+
+### Code Organization
+- Group related functionality together
+- Use clear folder structures
+- Separate concerns into different files
+- Keep files focused and reasonably sized
+
+### Naming Conventions
+- Use descriptive, intention-revealing names
+- Avoid abbreviations and acronyms
+- Use consistent naming patterns
+- Name functions with verbs, classes with nouns
+
+### Comments
+- Write self-documenting code
+- Comment why, not what
+- Remove commented-out code
+- Keep comments up to date
+
+### Testing
+- Write tests alongside code
+- Test behavior, not implementation
+- Maintain high test coverage for critical paths
+- Use appropriate test types (unit, integration, e2e)
+
+### Performance
+- Profile before optimizing
+- Optimize bottlenecks
+- Use appropriate caching strategies
+- Consider database query efficiency
+- Minimize network requests
+
+### Accessibility
+- Follow WCAG guidelines
+- Use semantic HTML
+- Ensure keyboard navigation
+- Provide alternative text for images
+- Test with screen readers

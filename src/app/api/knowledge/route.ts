@@ -1,26 +1,26 @@
 // src/app/api/knowledge/route.ts
 import { createRouteHandlerClient } from '@/lib/supabaseServer'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { knowledgeService, ImportKnowledgeParams } from '@/lib/services/knowledgeService'
+import { ApiError, handleApiError, apiSuccess } from '@/lib/utils/apiError'
 
 export async function GET() {
   try {
     const supabase = await createRouteHandlerClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 })
+    if (!user) throw ApiError.unauthorized('未登录')
 
     // Check if user is operator
     if (user.app_metadata?.role !== 'operator') {
-      return NextResponse.json({ error: '权限不足' }, { status: 403 })
+      throw ApiError.forbidden('权限不足')
     }
 
     const data = await knowledgeService.getAllKnowledge(supabase)
 
-    return NextResponse.json(data)
+    return apiSuccess(data)
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -36,23 +36,15 @@ export async function POST(req: NextRequest) {
       } else if (body && Array.isArray(body.items)) {
         items = body.items;
       } else {
-         return NextResponse.json(
-          { error: "Invalid request format. Expected an array of items." },
-          { status: 400 }
-        );
+         throw ApiError.validationError("Invalid request format. Expected an array of items.");
       }
-    } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON" },
-        { status: 400 }
-      );
+    } catch (e) {
+      if (e instanceof ApiError) throw e;
+      throw ApiError.validationError("Invalid JSON");
     }
 
     if (items.length === 0) {
-      return NextResponse.json(
-        { error: "No items to import" },
-        { status: 400 }
-      );
+      throw ApiError.validationError("No items to import");
     }
 
     const supabase = await createRouteHandlerClient();
@@ -64,25 +56,18 @@ export async function POST(req: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user || user.app_metadata?.role !== "operator") {
-      return NextResponse.json(
-        { error: "Permission denied" },
-        { status: 403 }
-      );
+      throw ApiError.forbidden("Permission denied");
     }
 
     const result = await knowledgeService.importKnowledge(supabase, items);
     
     if (!result.success && result.message === "No valid items found") {
-        return NextResponse.json({ error: result.message }, { status: 400 })
+        throw ApiError.validationError(result.message);
     }
 
-    return NextResponse.json(result);
+    return apiSuccess(result);
 
   } catch (e) {
-    console.error("Import exception:", e);
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Internal Server Error" },
-      { status: 500 }
-    );
+    return handleApiError(e);
   }
 }

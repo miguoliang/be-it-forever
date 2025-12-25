@@ -1,6 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getTodayDateRange, nowISO } from '@/lib/utils/dateUtils';
 import { Card, KnowledgeMetadata } from '@/app/learn/types';
+import { DAILY_REVIEW_LIMIT } from '@/lib/constants';
+import { ApiError } from '@/lib/utils/apiError';
 
 export interface DueCardsResult {
   reviewedCount: number;
@@ -38,8 +40,6 @@ interface RawCardData {
   };
 }
 
-const DAILY_REVIEW_LIMIT = 10;
-
 /**
  * Service to handle card-related business logic
  */
@@ -61,7 +61,7 @@ export const cardService = {
       .lte('last_reviewed_at', endOfToday.toISOString());
 
     if (error) {
-      throw new Error(`Count reviewed today error: ${error.message}`);
+      throw ApiError.internal(`Count reviewed today error: ${error.message}`);
     }
 
     return count ?? 0;
@@ -120,7 +120,7 @@ export const cardService = {
       .limit(remainingSlots);
 
     if (dueError) {
-      throw new Error(`Fetch due cards error: ${dueError.message}`);
+      throw ApiError.internal(`Fetch due cards error: ${dueError.message}`);
     }
 
     // 3. Transform response
@@ -150,9 +150,6 @@ export const cardService = {
       // Ensure the return object matches Card interface
       return {
         ...rest,
-        // Card type expects a simplified knowledge object, assuming RawCardData matches nicely 
-        // or we spread rest which includes knowledge.
-        // We need to make sure 'templates' is properly assigned
         templates: templates as { front: string; back: string },
       };
     });
@@ -181,7 +178,7 @@ export const cardService = {
       .single();
 
     if (fetchError || !card) {
-      throw new Error('卡片不存在');
+      throw ApiError.notFound('卡片不存在');
     }
 
     // 2. Check daily limit
@@ -198,14 +195,14 @@ export const cardService = {
       const reviewedTodayCount = await this.getReviewedTodayCount(supabase, userId);
 
       if (reviewedTodayCount >= DAILY_REVIEW_LIMIT) {
-        throw new Error('今日已复习10张卡片，已达到每日限制');
+        throw ApiError.dailyLimitExceeded(`今日已复习${DAILY_REVIEW_LIMIT}张卡片，已达到每日限制`);
       }
     }
 
     // 3. SM-2 Algorithm
-    let newEase = card.ease_factor;
-    let newReps = card.repetitions;
-    let newInterval = card.interval_days;
+    let newEase = Number(card.ease_factor);
+    let newReps = Number(card.repetitions);
+    let newInterval = Number(card.interval_days);
 
     if (quality >= 3) {
       // Correct answer
@@ -228,29 +225,19 @@ export const cardService = {
     nextReview.setUTCDate(nextReview.getUTCDate() + newInterval);
     nextReview.setUTCHours(0, 0, 0, 0);
 
-    // 4. Update Card & Insert History
-    const { error: updateError } = await supabase
-      .from('account_cards')
-      .update({
-        ease_factor: parseFloat(newEase.toFixed(2)),
-        interval_days: newInterval,
-        repetitions: newReps,
-        next_review_date: nextReview.toISOString(),
-        last_reviewed_at: nowISO(),
-      })
-      .eq('id', cardId);
+    // 4. Call RPC to Update Card & Insert History Transactionally
+    const { error: rpcError } = await supabase.rpc('review_card', {
+        p_card_id: cardId,
+        p_user_id: userId,
+        p_quality: quality,
+        p_ease_factor: parseFloat(newEase.toFixed(2)),
+        p_interval_days: newInterval,
+        p_repetitions: newReps,
+        p_next_review_date: nextReview.toISOString()
+    });
 
-    if (updateError) {
-      throw new Error(`Update card error: ${updateError.message}`);
-    }
-
-    const { error: historyError } = await supabase
-      .from('review_history')
-      .insert({ account_card_id: cardId, quality });
-
-    if (historyError) {
-      console.error('Insert review history error:', historyError);
-      // Non-blocking error
+    if (rpcError) {
+      throw ApiError.internal(`Review card failed: ${rpcError.message}`);
     }
 
     return {
