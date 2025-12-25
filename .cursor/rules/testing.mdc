@@ -1,0 +1,68 @@
+---
+description: Standards for writing and organizing tests
+globs: ["**/*.test.ts", "**/*.test.tsx", "src/**/*"]
+---
+
+# Testing Standards
+
+Follow these rules when writing or modifying tests in the codebase.
+
+## 1. Test Location & Naming
+
+- **Colocation**: Test files must be located in the same directory as the source file they test.
+  - Source: `src/lib/services/cardService.ts`
+  - Test:   `src/lib/services/cardService.test.ts`
+- **Naming**: Use the `*.test.ts` (or `*.test.tsx`) extension. Do not use `__tests__` directories.
+
+## 2. Tools & Frameworks
+
+- **Runner**: Jest
+- **React Components/Hooks**: `@testing-library/react`
+- **DOM Assertions**: `@testing-library/jest-dom`
+- **Mocking**: Jest built-in mocking (`jest.fn()`, `jest.mock()`, `jest.spyOn()`)
+
+## 3. Testing Philosophy
+
+- **Unit Tests First**: Prioritize unit tests for:
+  - Business logic services (e.g., SM-2 algorithm in `cardService`)
+  - Utility functions (`apiError`, `dateUtils`)
+  - Complex custom hooks (`useCardNavigation`)
+- **Isolation**: Unit tests should be isolated. Mock external dependencies like:
+  - Supabase client
+  - API calls (`fetch`)
+  - Next.js router (`useRouter`)
+- **Behavior-Driven**: Test public behavior/outputs, not internal implementation details.
+
+## 4. Mocking Guidelines
+
+- **Supabase**: Do not connect to the real Supabase instance in unit tests. Mock the client methods.
+  ```typescript
+  const mockSupabase = {
+    from: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    // ...
+  };
+  ```
+- **Time**: Use `jest.useFakeTimers()` for tests involving `setTimeout`, `setInterval`, or date calculations that need precision.
+
+## 5. Structure
+
+- Use `describe` blocks to group related tests (e.g., by function name).
+- Use `it` or `test` blocks for individual assertions.
+- Use `beforeEach` to reset mocks and state between tests.
+
+```typescript
+describe('serviceName', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('methodName', () => {
+    it('should expected behavior', async () => {
+      // Arrange
+      // Act
+      // Assert
+    });
+  });
+});
+```
