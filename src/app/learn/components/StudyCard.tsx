@@ -7,7 +7,7 @@ interface StudyCardProps {
   card: Card;
   flipped: boolean;
   onFlip: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   onSpeak: (text: string, lang: "en-US" | "en-GB") => void;
   onTouchStart: (e: React.TouchEvent) => void;
   onTouchEnd: (e: React.TouchEvent) => void;

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { WordData } from "../types";
 import { parseCSV, CSVData } from "../utils/csvParser";
 
 export type { CSVData } from "../utils/csvParser";
